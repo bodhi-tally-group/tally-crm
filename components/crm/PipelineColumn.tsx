@@ -62,7 +62,7 @@ export default function PipelineColumn({
       onDrop={handleDrop}
     >
       {/* Column header */}
-      <div className="flex items-center justify-between border-b border-border px-3 py-2.5 dark:border-gray-700">
+      <div className="flex items-center justify-between rounded-t-lg border-b border-border bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
         <div className="flex items-center gap-2">
           <span className={cn("h-2.5 w-2.5 rounded-full", stageColors[stage])} />
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">

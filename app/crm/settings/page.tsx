@@ -77,6 +77,38 @@ function StatusDot({ status }: { status: "active" | "inactive" | "pending" }) {
   return <span className={cn("mr-1.5 inline-block h-2 w-2 rounded-full", color)} />;
 }
 
+function SectionHeader({
+  title,
+  description,
+  action,
+  borderless,
+}: {
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+  borderless?: boolean;
+}) {
+  return (
+    <div className={cn("flex items-center justify-between p-density-lg", !borderless && "border-b border-border dark:border-gray-700")}>
+      <div>
+        <h3
+          className="font-bold uppercase tracking-wider text-gray-900 dark:text-gray-100"
+          style={{ fontSize: "var(--tally-font-size-sm)" }}
+        >
+          {title}
+        </h3>
+        <p
+          className="mt-density-xs text-muted-foreground"
+          style={{ fontSize: "var(--tally-font-size-xs)" }}
+        >
+          {description}
+        </p>
+      </div>
+      {action}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("users");
 
@@ -112,21 +144,21 @@ export default function SettingsPage() {
               <input
                 type="text"
                 placeholder="Search users..."
-                className="w-[280px] rounded-density-md border border-border bg-white py-2 pl-9 pr-3 outline-none placeholder:text-muted-foreground focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                className="h-10 w-[280px] rounded-density-md border border-border bg-white pl-9 pr-3 outline-none placeholder:text-muted-foreground focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
                 style={{ fontSize: "var(--tally-font-size-sm)" }}
               />
             </div>
             <Button size="sm" className="gap-1.5">
-              <Icon name="person_add" size="var(--tally-icon-size-sm)" className="mr-1" />
+              <Icon name="person_add" size="var(--tally-icon-size-sm)" />
               Add User
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-density-lg lg:grid-cols-[220px_1fr]">
+        <div className="grid grid-cols-1 gap-density-lg lg:grid-cols-[240px_1fr]">
           {/* Settings nav */}
           <Card className="h-fit shadow-none">
-            <div className="py-density-md">
+            <div className="p-density-sm">
               {SETTINGS_TABS.map((tab) => {
                 const isActive = activeTab === tab.key;
                 return (
@@ -134,13 +166,10 @@ export default function SettingsPage() {
                     key={tab.key}
                     type="button"
                     onClick={() => setActiveTab(tab.key)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") setActiveTab(tab.key);
-                    }}
                     className={cn(
-                      "flex w-full items-center gap-density-sm border-l-[3px] border-transparent px-density-lg py-density-md transition-colors",
+                      "flex w-full items-center gap-density-md rounded-density-md px-density-md py-density-md transition-colors",
                       isActive
-                        ? "border-l-[#2C365D] bg-[#2C365D]/5 font-semibold text-[#2C365D] dark:border-l-[#7c8cb8] dark:bg-[#7c8cb8]/10 dark:text-[#7c8cb8]"
+                        ? "bg-[#2C365D]/10 font-semibold text-[#2C365D] dark:bg-[#7c8cb8]/10 dark:text-[#7c8cb8]"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
                     )}
                     style={{ fontSize: "var(--tally-font-size-sm)" }}
@@ -155,354 +184,231 @@ export default function SettingsPage() {
 
           {/* Content area */}
           <div className="flex flex-col gap-density-lg">
+            {/* Users */}
             {activeTab === "users" && (
               <Card className="shadow-none">
-                <CardHeader className="flex flex-row items-center justify-between border-b border-border dark:border-gray-700">
-                  <div>
-                    <CardTitle
-                      className="uppercase tracking-wider"
-                      style={{ fontSize: "var(--tally-font-size-sm)" }}
-                    >
-                      User Management
-                    </CardTitle>
-                    <CardDescription
-                      className="mt-density-xs"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      Manage CRM users and roles
-                    </CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <Icon name="download" size="var(--tally-icon-size-sm)" />
-                    Export
-                  </Button>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-hidden rounded-b-density-md">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            User
-                          </TableHead>
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            Role
-                          </TableHead>
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            Team
-                          </TableHead>
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            Status
-                          </TableHead>
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            Last Active
-                          </TableHead>
-                          <TableHead
-                            className="bg-gray-50 dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          />
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {USERS_DATA.map((user) => (
-                          <TableRow key={user.id} className="group">
-                            <TableCell style={{ fontSize: "var(--tally-font-size-sm)" }}>
-                              <div className="flex items-center gap-density-md">
-                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2C365D] text-white dark:bg-[#7c8cb8]">
-                                  <span
-                                    className="font-semibold"
-                                    style={{ fontSize: "var(--tally-font-size-xs)" }}
-                                  >
-                                    {user.initials}
-                                  </span>
+                <SectionHeader
+                  title="User Management"
+                  description="Manage CRM users and roles"
+                  action={
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <Icon name="download" size="var(--tally-icon-size-sm)" />
+                      Export
+                    </Button>
+                  }
+                />
+                <div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          User
+                        </TableHead>
+                        <TableHead className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          Role
+                        </TableHead>
+                        <TableHead className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          Team
+                        </TableHead>
+                        <TableHead className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          Status
+                        </TableHead>
+                        <TableHead className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          Last Active
+                        </TableHead>
+                        <TableHead className="w-10 bg-gray-50 dark:bg-gray-800/50" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {USERS_DATA.map((user) => (
+                        <TableRow key={user.id} className="group">
+                          <TableCell>
+                            <div className="flex items-center gap-density-md">
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#2C365D] text-white dark:bg-[#7c8cb8]">
+                                <span className="font-semibold" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                                  {user.initials}
+                                </span>
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900 dark:text-gray-100">
+                                  {user.name}
                                 </div>
-                                <div>
-                                  <div className="font-medium text-gray-900 dark:text-gray-100">
-                                    {user.name}
-                                  </div>
-                                  <div
-                                    className="text-muted-foreground"
-                                    style={{ fontSize: "var(--tally-font-size-xs)" }}
-                                  >
-                                    {user.email}
-                                  </div>
+                                <div className="text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                                  {user.email}
                                 </div>
                               </div>
-                            </TableCell>
-                            <TableCell style={{ fontSize: "var(--tally-font-size-sm)" }}>
-                              <RoleBadge role={user.role} label={user.roleLabel} />
-                            </TableCell>
-                            <TableCell
-                              className="text-gray-900 dark:text-gray-100"
-                              style={{ fontSize: "var(--tally-font-size-sm)" }}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <RoleBadge role={user.role} label={user.roleLabel} />
+                          </TableCell>
+                          <TableCell className="text-gray-700 dark:text-gray-300">
+                            {user.team}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center capitalize">
+                              <StatusDot status={user.status as "active" | "inactive" | "pending"} />
+                              {user.status}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-gray-700 dark:text-gray-300">
+                            {user.lastActive}
+                          </TableCell>
+                          <TableCell className="w-10 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={cn(
+                                "h-7 w-7",
+                                user.showDelete && "hover:bg-[#C40000]/10 hover:text-[#C40000]"
+                              )}
                             >
-                              {user.team}
-                            </TableCell>
-                            <TableCell style={{ fontSize: "var(--tally-font-size-sm)" }}>
-                              <span className="inline-flex items-center">
-                                <StatusDot status={user.status as "active" | "inactive" | "pending"} />
-                                {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
-                              </span>
-                            </TableCell>
-                            <TableCell
-                              className="text-gray-900 dark:text-gray-100"
-                              style={{ fontSize: "var(--tally-font-size-sm)" }}
-                            >
-                              {user.lastActive}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className={cn(
-                                  "h-7 w-7",
-                                  user.showDelete &&
-                                    "hover:bg-[#C40000]/10 hover:text-[#C40000]"
-                                )}
-                              >
-                                <Icon
-                                  name={user.showDelete ? "delete" : "more_vert"}
-                                  size="var(--tally-icon-size-sm)"
-                                />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
+                              <Icon
+                                name={user.showDelete ? "delete" : "more_vert"}
+                                size="var(--tally-icon-size-sm)"
+                              />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </Card>
             )}
 
+            {/* Roles */}
             {activeTab === "roles" && (
               <Card className="shadow-none">
-                <CardHeader className="flex flex-row items-center justify-between border-b border-border dark:border-gray-700">
-                  <div>
-                    <CardTitle
-                      className="uppercase tracking-wider"
-                      style={{ fontSize: "var(--tally-font-size-sm)" }}
-                    >
-                      Role Management
-                    </CardTitle>
-                    <CardDescription
-                      className="mt-density-xs"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      Define roles and access levels
-                    </CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <Icon name="add" size="var(--tally-icon-size-sm)" />
-                    Create Role
-                  </Button>
-                </CardHeader>
-                <CardContent className="p-density-xl">
-                  <div className="grid grid-cols-1 gap-density-lg sm:grid-cols-2 xl:grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                <SectionHeader
+                  title="Role Management"
+                  description="Define roles and access levels"
+                  borderless
+                  action={
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <Icon name="add" size="var(--tally-icon-size-sm)" />
+                      Create Role
+                    </Button>
+                  }
+                />
+                <CardContent className="p-density-lg">
+                  <div className="grid grid-cols-1 gap-density-lg sm:grid-cols-2">
                     {ROLES_DATA.map((role) => (
-                      <Card
+                      <div
                         key={role.name}
-                        className="border-2 border-transparent shadow-none transition-colors hover:border-border dark:hover:border-gray-700"
+                        className="rounded-density-md border border-border p-density-lg transition-colors hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"
                       >
-                        <CardContent className="p-density-xl">
-                          <div className="mb-density-md flex items-center justify-between">
-                            <div
-                              className="font-bold text-gray-900 dark:text-gray-100"
-                              style={{ fontSize: "var(--tally-font-size-base)" }}
-                            >
-                              {role.name}
-                            </div>
-                            <Badge variant="outline" className="text-muted-foreground">
-                              {role.count} users
-                            </Badge>
-                          </div>
-                          <p
-                            className="mb-density-md leading-relaxed text-muted-foreground"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
+                        <div className="mb-density-sm flex items-center justify-between">
+                          <span
+                            className="font-bold text-gray-900 dark:text-gray-100"
+                            style={{ fontSize: "var(--tally-font-size-base)" }}
                           >
-                            {role.description}
-                          </p>
-                          <div className="flex flex-wrap gap-density-sm">
-                            {role.badges.map((b) => (
-                              <Badge
-                                key={b.label}
-                                variant={b.active ? "success" : "outline"}
-                                className={!b.active ? "text-muted-foreground" : ""}
-                              >
-                                {b.label}
-                              </Badge>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
+                            {role.name}
+                          </span>
+                          <Badge variant="outline" className="text-muted-foreground">
+                            {role.count} users
+                          </Badge>
+                        </div>
+                        <p
+                          className="mb-density-md leading-relaxed text-muted-foreground"
+                          style={{ fontSize: "var(--tally-font-size-xs)" }}
+                        >
+                          {role.description}
+                        </p>
+                        <div className="flex flex-wrap gap-density-xs">
+                          {role.badges.map((b) => (
+                            <Badge
+                              key={b.label}
+                              variant={b.active ? "success" : "outline"}
+                              className={!b.active ? "text-muted-foreground" : ""}
+                            >
+                              {b.label}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
             )}
 
+            {/* Permissions */}
             {activeTab === "permissions" && (
               <Card className="shadow-none">
-                <CardHeader className="flex flex-row items-center justify-between border-b border-border dark:border-gray-700">
-                  <div>
-                    <CardTitle
-                      className="uppercase tracking-wider"
-                      style={{ fontSize: "var(--tally-font-size-sm)" }}
-                    >
-                      Permissions Matrix
-                    </CardTitle>
-                    <CardDescription
-                      className="mt-density-xs"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      RBAC permissions by role
-                    </CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" className="gap-1.5">
-                    <Icon name="download" size="var(--tally-icon-size-sm)" />
-                    Export
-                  </Button>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-hidden rounded-b-density-md">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            Resource
-                          </TableHead>
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            Administrator
-                          </TableHead>
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            Manager
-                          </TableHead>
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            Agent
-                          </TableHead>
-                          <TableHead
-                            className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                            style={{ fontSize: "var(--tally-font-size-xs)" }}
-                          >
-                            Viewer
-                          </TableHead>
+                <SectionHeader
+                  title="Permissions Matrix"
+                  description="RBAC permissions by role"
+                  action={
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <Icon name="download" size="var(--tally-icon-size-sm)" />
+                      Export
+                    </Button>
+                  }
+                />
+                <div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          Resource
+                        </TableHead>
+                        <TableHead className="bg-gray-50 text-center font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          Administrator
+                        </TableHead>
+                        <TableHead className="bg-gray-50 text-center font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          Manager
+                        </TableHead>
+                        <TableHead className="bg-gray-50 text-center font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          Agent
+                        </TableHead>
+                        <TableHead className="bg-gray-50 text-center font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                          Viewer
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {PERMISSIONS_MATRIX.map((row) => (
+                        <TableRow key={row.resource}>
+                          <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                            {row.resource}
+                          </TableCell>
+                          {(["admin", "manager", "agent", "viewer"] as const).map((col) => {
+                            const icon = row[col];
+                            const colorClass =
+                              icon === "check"
+                                ? "text-[#008000]"
+                                : icon === "visibility"
+                                  ? "text-[#0074C4]"
+                                  : icon === "remove"
+                                    ? "text-[#C53B00]"
+                                    : "text-[#C40000]";
+                            return (
+                              <TableCell key={col} className="text-center">
+                                <Icon name={icon} size="var(--tally-icon-size-sm)" className={colorClass} />
+                              </TableCell>
+                            );
+                          })}
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {PERMISSIONS_MATRIX.map((row) => (
-                          <TableRow key={row.resource} className="group">
-                            <TableCell
-                              className="font-medium text-gray-900 dark:text-gray-100"
-                              style={{ fontSize: "var(--tally-font-size-sm)" }}
-                            >
-                              {row.resource}
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Icon
-                                name={row.admin}
-                                size="var(--tally-icon-size-sm)"
-                                className={
-                                  row.admin === "check"
-                                    ? "text-[#008000]"
-                                    : "text-[#C40000]"
-                                }
-                              />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Icon
-                                name={row.manager}
-                                size="var(--tally-icon-size-sm)"
-                                className={
-                                  row.manager === "check"
-                                    ? "text-[#008000]"
-                                    : row.manager === "remove"
-                                      ? "text-[#C53B00]"
-                                      : "text-[#C40000]"
-                                }
-                              />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Icon
-                                name={row.agent}
-                                size="var(--tally-icon-size-sm)"
-                                className={
-                                  row.agent === "check"
-                                    ? "text-[#008000]"
-                                    : row.agent === "remove"
-                                      ? "text-[#C53B00]"
-                                      : "text-[#C40000]"
-                                }
-                              />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <Icon
-                                name={row.viewer}
-                                size="var(--tally-icon-size-sm)"
-                                className="text-[#C40000]"
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </Card>
             )}
 
+            {/* Placeholder tabs */}
             {activeTab !== "users" &&
               activeTab !== "roles" &&
               activeTab !== "permissions" && (
                 <Card className="shadow-none">
-                  <CardHeader className="border-b border-border dark:border-gray-700">
-                    <CardTitle
-                      className="uppercase tracking-wider"
-                      style={{ fontSize: "var(--tally-font-size-sm)" }}
-                    >
-                      {SETTINGS_TABS.find((t) => t.key === activeTab)?.label}
-                    </CardTitle>
-                    <CardDescription
-                      className="mt-density-xs"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      Configuration panel
-                    </CardDescription>
-                  </CardHeader>
+                  <SectionHeader
+                    title={SETTINGS_TABS.find((t) => t.key === activeTab)?.label ?? ""}
+                    description="Configuration panel"
+                  />
                   <CardContent className="p-density-xl">
-                    <p
-                      className="text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-sm)" }}
-                    >
-                      This section will be wired to configuration APIs in Phase
-                      2. For now, use the CRM API/DB spec to align the fields
-                      and validation rules.
+                    <p className="text-muted-foreground" style={{ fontSize: "var(--tally-font-size-sm)" }}>
+                      This section will be wired to configuration APIs in Phase 2. For now, use the CRM API/DB spec to align the fields and validation rules.
                     </p>
                   </CardContent>
                 </Card>

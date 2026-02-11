@@ -110,14 +110,20 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
 TableRow.displayName = "TableRow";
 
 const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, style, ...props }, ref) => {
     return (
       <th
         ref={ref}
         className={cn(
-          "h-10 px-2 text-left align-middle font-medium text-gray-900 dark:text-gray-100 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+          "px-density-md text-left align-middle font-medium text-gray-900 dark:text-gray-100 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
           className
         )}
+        style={{
+          paddingTop: "var(--tally-spacing-md)",
+          paddingBottom: "var(--tally-spacing-md)",
+          fontSize: "var(--tally-font-size-sm)",
+          ...style,
+        }}
         {...props}
       />
     );
@@ -126,14 +132,20 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
 TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, style, ...props }, ref) => {
     return (
       <td
         ref={ref}
         className={cn(
-          "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+          "px-density-md align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
           className
         )}
+        style={{
+          paddingTop: "var(--tally-spacing-md)",
+          paddingBottom: "var(--tally-spacing-md)",
+          fontSize: "var(--tally-font-size-sm)",
+          ...style,
+        }}
         {...props}
       />
     );

@@ -194,28 +194,16 @@ export default function PerformancePage() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-border dark:border-gray-700">
-                    <TableHead
-                      className="py-density-md font-bold uppercase tracking-wider text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
+                    <TableHead className="font-bold uppercase tracking-wider text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
                       Request Type
                     </TableHead>
-                    <TableHead
-                      className="py-density-md font-bold uppercase tracking-wider text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
+                    <TableHead className="font-bold uppercase tracking-wider text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
                       Response Target
                     </TableHead>
-                    <TableHead
-                      className="py-density-md font-bold uppercase tracking-wider text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
+                    <TableHead className="font-bold uppercase tracking-wider text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
                       Resolution Target
                     </TableHead>
-                    <TableHead
-                      className="py-density-md font-bold uppercase tracking-wider text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
+                    <TableHead className="font-bold uppercase tracking-wider text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
                       Performance
                     </TableHead>
                   </TableRow>
@@ -226,10 +214,7 @@ export default function PerformancePage() {
                       key={row.name}
                       className="border-border dark:border-gray-700"
                     >
-                      <TableCell
-                        className="py-density-md text-gray-900 dark:text-gray-100"
-                        style={{ fontSize: "var(--tally-font-size-sm)" }}
-                      >
+                      <TableCell className="text-gray-900 dark:text-gray-100">
                         <div className="font-medium">{row.name}</div>
                         <div
                           className="mt-density-xs text-muted-foreground"
@@ -238,22 +223,13 @@ export default function PerformancePage() {
                           {row.desc}
                         </div>
                       </TableCell>
-                      <TableCell
-                        className="py-density-md font-semibold text-gray-900 dark:text-gray-100"
-                        style={{ fontSize: "var(--tally-font-size-sm)" }}
-                      >
+                      <TableCell className="font-semibold text-gray-900 dark:text-gray-100">
                         {row.responseTarget}
                       </TableCell>
-                      <TableCell
-                        className="py-density-md font-semibold text-gray-900 dark:text-gray-100"
-                        style={{ fontSize: "var(--tally-font-size-sm)" }}
-                      >
+                      <TableCell className="font-semibold text-gray-900 dark:text-gray-100">
                         {row.resolutionTarget}
                       </TableCell>
-                      <TableCell
-                        className="py-density-md text-gray-900 dark:text-gray-100"
-                        style={{ fontSize: "var(--tally-font-size-sm)" }}
-                      >
+                      <TableCell className="text-gray-900 dark:text-gray-100">
                         <div className="flex items-center gap-density-md">
                           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
                             <div
@@ -296,28 +272,16 @@ export default function PerformancePage() {
               <Table>
                 <TableHeader>
                   <TableRow className="border-border dark:border-gray-700">
-                    <TableHead
-                      className="py-density-md font-bold uppercase text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
+                    <TableHead className="font-bold uppercase text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
                       Case
                     </TableHead>
-                    <TableHead
-                      className="py-density-md font-bold uppercase text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
+                    <TableHead className="font-bold uppercase text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
                       Type
                     </TableHead>
-                    <TableHead
-                      className="py-density-md font-bold uppercase text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
+                    <TableHead className="font-bold uppercase text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
                       Owner
                     </TableHead>
-                    <TableHead
-                      className="py-density-md font-bold uppercase text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
+                    <TableHead className="font-bold uppercase text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
                       Overdue
                     </TableHead>
                   </TableRow>
@@ -328,10 +292,7 @@ export default function PerformancePage() {
                       key={row.case}
                       className="border-border dark:border-gray-700"
                     >
-                      <TableCell
-                        className="py-density-md"
-                        style={{ fontSize: "var(--tally-font-size-sm)" }}
-                      >
+                      <TableCell>
                         <Link
                           href={`/crm/cases/${row.case}`}
                           className="font-medium text-[#2C365D] no-underline hover:underline dark:text-[#7c8cb8]"
@@ -339,22 +300,13 @@ export default function PerformancePage() {
                           {row.case}
                         </Link>
                       </TableCell>
-                      <TableCell
-                        className="py-density-md"
-                        style={{ fontSize: "var(--tally-font-size-sm)" }}
-                      >
+                      <TableCell>
                         <Badge variant="error">{row.type}</Badge>
                       </TableCell>
-                      <TableCell
-                        className="py-density-md text-gray-900 dark:text-gray-100"
-                        style={{ fontSize: "var(--tally-font-size-sm)" }}
-                      >
+                      <TableCell className="text-gray-900 dark:text-gray-100">
                         {row.owner}
                       </TableCell>
-                      <TableCell
-                        className="py-density-md text-gray-900 dark:text-gray-100"
-                        style={{ fontSize: "var(--tally-font-size-sm)" }}
-                      >
+                      <TableCell className="text-gray-900 dark:text-gray-100">
                         {row.overdue}
                       </TableCell>
                     </TableRow>

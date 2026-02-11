@@ -104,40 +104,34 @@ export default function CommunicationsPage() {
         {/* Quick actions */}
         <div className="mb-density-xl grid grid-cols-1 gap-density-lg sm:grid-cols-2 xl:grid-cols-4">
           {[
-            { title: "Log Call", desc: "Record an outbound or inbound call", icon: "call", iconBg: "bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20", iconColor: "text-[#2C365D] dark:text-[#7c8cb8]" },
-            { title: "Send Email", desc: "Compose and send an email to customer", icon: "mail", iconBg: "bg-[#0074C4]/10 dark:bg-[#0074C4]/20", iconColor: "text-[#0074C4] dark:text-blue-400" },
-            { title: "Schedule Meeting", desc: "Book a meeting or call with customer", icon: "event_available", iconBg: "bg-[#008000]/10 dark:bg-[#008000]/20", iconColor: "text-[#008000] dark:text-green-400" },
-            { title: "Add Note", desc: "Add an internal note or update", icon: "note", iconBg: "bg-[#8B5CF6]/10 dark:bg-[#8B5CF6]/20", iconColor: "text-[#8B5CF6] dark:text-purple-400" },
+            { title: "Log Call", desc: "Record an outbound or inbound call", icon: "call", iconColor: "text-[#2C365D] dark:text-[#7c8cb8]" },
+            { title: "Send Email", desc: "Compose and send an email to customer", icon: "mail", iconColor: "text-[#0074C4] dark:text-blue-400" },
+            { title: "Schedule Meeting", desc: "Book a meeting or call with customer", icon: "event_available", iconColor: "text-[#008000] dark:text-green-400" },
+            { title: "Add Note", desc: "Add an internal note or update", icon: "note", iconColor: "text-[#8B5CF6] dark:text-purple-400" },
           ].map((action) => (
             <Card
               key={action.title}
               className="group cursor-pointer transition-all shadow-none hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8]"
               onClick={() => {}}
             >
-              <CardContent className="p-density-xl pt-density-xl">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p
-                      className="font-bold leading-tight text-gray-900 dark:text-gray-100"
-                      style={{ fontSize: "var(--tally-font-size-lg)" }}
-                    >
-                      {action.title}
-                    </p>
-                    <p
-                      className="mt-density-sm text-muted-foreground"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      {action.desc}
-                    </p>
-                  </div>
-                  <div className={cn("flex shrink-0 items-center justify-center rounded-density-md p-density-md", action.iconBg)}>
-                    <Icon name={action.icon} size="var(--tally-icon-size-lg)" className={action.iconColor} />
-                  </div>
+              <div className="flex items-center gap-density-md p-density-lg">
+                <Icon name={action.icon} size="var(--tally-icon-size-lg)" className={action.iconColor} />
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="font-bold leading-tight text-gray-900 dark:text-gray-100"
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  >
+                    {action.title}
+                  </p>
+                  <p
+                    className="mt-0.5 truncate text-muted-foreground"
+                    style={{ fontSize: "var(--tally-font-size-xs)" }}
+                  >
+                    {action.desc}
+                  </p>
                 </div>
-                <div className="mt-density-lg flex justify-end">
-                  <Icon name="arrow_forward" size="var(--tally-icon-size-md)" className="text-muted-foreground transition-all group-hover:text-[#2C365D] group-hover:translate-x-0.5 dark:group-hover:text-[#7c8cb8]" />
-                </div>
-              </CardContent>
+                <Icon name="arrow_forward" size="var(--tally-icon-size-md)" className="shrink-0 text-muted-foreground transition-all group-hover:translate-x-0.5 group-hover:text-[#2C365D] dark:group-hover:text-[#7c8cb8]" />
+              </div>
             </Card>
           ))}
         </div>

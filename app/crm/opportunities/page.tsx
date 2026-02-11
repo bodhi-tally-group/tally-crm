@@ -170,9 +170,10 @@ export default function OpportunitiesPage() {
     "w-full rounded-density-md border border-border bg-white py-2 px-3 outline-none placeholder:text-muted-foreground focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100";
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-      {/* Top section: header + filters + KPIs (shrinks, doesn't scroll with kanban) */}
-      <div className="shrink-0 overflow-y-auto p-density-xl pb-0">
+    <div className="min-w-0 flex-1 overflow-y-auto">
+      <div className="mx-auto max-w-[1600px] p-density-xl">
+      {/* Top section: header + filters + KPIs */}
+      <div>
         {/* Page header */}
         <div className="mb-density-lg flex items-center justify-between">
           <div>
@@ -225,18 +226,21 @@ export default function OpportunitiesPage() {
             >
               Status
             </label>
-            <select
-              className={cn(formInput, "min-w-[160px] cursor-pointer py-1.5")}
-              style={{ fontSize: "var(--tally-font-size-sm)" }}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value || "all"} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative min-w-[160px]">
+              <select
+                className={cn(formInput, "cursor-pointer appearance-none py-1.5 pr-9")}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value || "all"} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <Icon name="expand_more" size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            </div>
           </div>
           <div className="flex flex-col gap-density-xs">
             <label
@@ -245,19 +249,22 @@ export default function OpportunitiesPage() {
             >
               Stage
             </label>
-            <select
-              className={cn(formInput, "min-w-[160px] cursor-pointer py-1.5")}
-              style={{ fontSize: "var(--tally-font-size-sm)" }}
-              value={stageFilter}
-              onChange={(e) => setStageFilter(e.target.value)}
-            >
-              <option value="">All Stages</option>
-              {OPPORTUNITY_STAGES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <div className="relative min-w-[160px]">
+              <select
+                className={cn(formInput, "cursor-pointer appearance-none py-1.5 pr-9")}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={stageFilter}
+                onChange={(e) => setStageFilter(e.target.value)}
+              >
+                <option value="">All Stages</option>
+                {OPPORTUNITY_STAGES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <Icon name="expand_more" size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            </div>
           </div>
           <div className="flex flex-col gap-density-xs">
             <label
@@ -266,19 +273,22 @@ export default function OpportunitiesPage() {
             >
               Owner
             </label>
-            <select
-              className={cn(formInput, "min-w-[160px] cursor-pointer py-1.5")}
-              style={{ fontSize: "var(--tally-font-size-sm)" }}
-              value={ownerFilter}
-              onChange={(e) => setOwnerFilter(e.target.value)}
-            >
-              <option value="">All Owners</option>
-              {OWNERS.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
+            <div className="relative min-w-[160px]">
+              <select
+                className={cn(formInput, "cursor-pointer appearance-none py-1.5 pr-9")}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={ownerFilter}
+                onChange={(e) => setOwnerFilter(e.target.value)}
+              >
+                <option value="">All Owners</option>
+                {OWNERS.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+              <Icon name="expand_more" size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            </div>
           </div>
           <div className="ml-auto flex items-center">
             <div className="inline-flex rounded-density-md border border-border bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900">
@@ -437,16 +447,16 @@ export default function OpportunitiesPage() {
         </div>
       </div>
 
-      {/* Kanban view — fills remaining vertical space, scrolls horizontally */}
+      {/* Kanban view */}
       {viewMode === "kanban" && (
         <div
           ref={kanbanRef}
-          className="scrollbar-visible min-h-0 flex-1 px-density-xl pb-density-xl"
-          style={{ overflowX: "auto", overflowY: "hidden" }}
+          className="mt-density-lg"
+          style={{ overflowX: "auto" }}
         >
           <div
-            className="flex h-full gap-density-md"
-            style={{ width: "max-content" }}
+            className="grid gap-density-lg pb-density-md"
+            style={{ gridTemplateColumns: `repeat(${OPPORTUNITY_STAGES.length}, minmax(260px, 1fr))` }}
           >
             {OPPORTUNITY_STAGES.map((stage) => {
               const stageOpps = kanbanByStage[stage] ?? [];
@@ -465,9 +475,9 @@ export default function OpportunitiesPage() {
         </div>
       )}
 
-      {/* List view — scrollable */}
+      {/* List view */}
       {viewMode === "list" && (
-        <div className="min-h-0 flex-1 overflow-auto px-density-xl pb-density-xl">
+        <div className="mt-density-lg">
           <div className="overflow-hidden rounded-density-md border border-border bg-white dark:border-gray-700 dark:bg-gray-900">
             <Table>
               <TableHeader>
@@ -558,6 +568,7 @@ export default function OpportunitiesPage() {
       {modalOpen && (
         <NewOpportunityModal onClose={() => setModalOpen(false)} />
       )}
+      </div>
     </div>
   );
 }
@@ -598,7 +609,7 @@ function OpportunityColumn({
   return (
     <div
       className={cn(
-        "flex w-72 shrink-0 flex-col rounded-lg border border-border bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50",
+        "flex min-w-0 flex-col rounded-lg border border-border bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50",
         isDragOver &&
           "border-[#2C365D] bg-[#2C365D]/5 dark:border-[#7c8cb8] dark:bg-[#7c8cb8]/5"
       )}
@@ -607,7 +618,7 @@ function OpportunityColumn({
       onDrop={handleDrop}
     >
       {/* Column header */}
-      <div className="flex items-center justify-between border-b border-border px-3 py-2.5 dark:border-gray-700">
+      <div className="flex items-center justify-between rounded-t-lg border-b border-border bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
         <div className="flex items-center gap-2">
           <span
             className={cn("h-2.5 w-2.5 rounded-full", stageColors[stage])}
