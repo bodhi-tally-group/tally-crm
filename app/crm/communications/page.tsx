@@ -102,95 +102,44 @@ export default function CommunicationsPage() {
         </div>
 
         {/* Quick actions */}
-        <div className="mb-density-xl grid grid-cols-1 gap-density-lg sm:grid-cols-2 lg:grid-cols-4">
-          <Card
-            className="cursor-pointer transition-all shadow-none hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8]"
-            onClick={() => {}}
-          >
-            <CardContent className="flex flex-col items-center text-center p-density-lg">
-              <div className="mx-auto mb-density-md flex h-12 w-12 items-center justify-center rounded-density-md bg-[#2C365D]/10 text-[#2C365D] dark:bg-[#7c8cb8]/20 dark:text-[#7c8cb8]">
-                <Icon name="call" size="var(--tally-icon-size-lg)" />
-              </div>
-              <span
-                className="font-semibold text-gray-900 dark:text-gray-100"
-                style={{ fontSize: "var(--tally-font-size-sm)" }}
-              >
-                Log Call
-              </span>
-              <p
-                className="mt-density-xs text-muted-foreground"
-                style={{ fontSize: "var(--tally-font-size-xs)" }}
-              >
-                Record an outbound or inbound call
-              </p>
-            </CardContent>
-          </Card>
-          <Card
-            className="cursor-pointer transition-all shadow-none hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8]"
-            onClick={() => {}}
-          >
-            <CardContent className="flex flex-col items-center text-center p-density-lg">
-              <div className="mx-auto mb-density-md flex h-12 w-12 items-center justify-center rounded-density-md bg-blue-50 text-[#0074C4] dark:bg-blue-950/30">
-                <Icon name="mail" size="var(--tally-icon-size-lg)" />
-              </div>
-              <span
-                className="font-semibold text-gray-900 dark:text-gray-100"
-                style={{ fontSize: "var(--tally-font-size-sm)" }}
-              >
-                Send Email
-              </span>
-              <p
-                className="mt-density-xs text-muted-foreground"
-                style={{ fontSize: "var(--tally-font-size-xs)" }}
-              >
-                Compose and send an email to customer
-              </p>
-            </CardContent>
-          </Card>
-          <Card
-            className="cursor-pointer transition-all shadow-none hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8]"
-            onClick={() => {}}
-          >
-            <CardContent className="flex flex-col items-center text-center p-density-lg">
-              <div className="mx-auto mb-density-md flex h-12 w-12 items-center justify-center rounded-density-md bg-green-50 text-[#008000] dark:bg-green-950/30">
-                <Icon name="event_available" size="var(--tally-icon-size-lg)" />
-              </div>
-              <span
-                className="font-semibold text-gray-900 dark:text-gray-100"
-                style={{ fontSize: "var(--tally-font-size-sm)" }}
-              >
-                Schedule Meeting
-              </span>
-              <p
-                className="mt-density-xs text-muted-foreground"
-                style={{ fontSize: "var(--tally-font-size-xs)" }}
-              >
-                Book a meeting or call with customer
-              </p>
-            </CardContent>
-          </Card>
-          <Card
-            className="cursor-pointer transition-all shadow-none hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8]"
-            onClick={() => {}}
-          >
-            <CardContent className="flex flex-col items-center text-center p-density-lg">
-              <div className="mx-auto mb-density-md flex h-12 w-12 items-center justify-center rounded-density-md bg-purple-50 text-[#8B5CF6] dark:bg-purple-950/30">
-                <Icon name="note" size="var(--tally-icon-size-lg)" />
-              </div>
-              <span
-                className="font-semibold text-gray-900 dark:text-gray-100"
-                style={{ fontSize: "var(--tally-font-size-sm)" }}
-              >
-                Add Note
-              </span>
-              <p
-                className="mt-density-xs text-muted-foreground"
-                style={{ fontSize: "var(--tally-font-size-xs)" }}
-              >
-                Add an internal note or update
-              </p>
-            </CardContent>
-          </Card>
+        <div className="mb-density-xl grid grid-cols-1 gap-density-lg sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { title: "Log Call", desc: "Record an outbound or inbound call", icon: "call", iconBg: "bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20", iconColor: "text-[#2C365D] dark:text-[#7c8cb8]" },
+            { title: "Send Email", desc: "Compose and send an email to customer", icon: "mail", iconBg: "bg-[#0074C4]/10 dark:bg-[#0074C4]/20", iconColor: "text-[#0074C4] dark:text-blue-400" },
+            { title: "Schedule Meeting", desc: "Book a meeting or call with customer", icon: "event_available", iconBg: "bg-[#008000]/10 dark:bg-[#008000]/20", iconColor: "text-[#008000] dark:text-green-400" },
+            { title: "Add Note", desc: "Add an internal note or update", icon: "note", iconBg: "bg-[#8B5CF6]/10 dark:bg-[#8B5CF6]/20", iconColor: "text-[#8B5CF6] dark:text-purple-400" },
+          ].map((action) => (
+            <Card
+              key={action.title}
+              className="group cursor-pointer transition-all shadow-none hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8]"
+              onClick={() => {}}
+            >
+              <CardContent className="p-density-xl pt-density-xl">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p
+                      className="font-bold leading-tight text-gray-900 dark:text-gray-100"
+                      style={{ fontSize: "var(--tally-font-size-lg)" }}
+                    >
+                      {action.title}
+                    </p>
+                    <p
+                      className="mt-density-sm text-muted-foreground"
+                      style={{ fontSize: "var(--tally-font-size-xs)" }}
+                    >
+                      {action.desc}
+                    </p>
+                  </div>
+                  <div className={cn("flex shrink-0 items-center justify-center rounded-density-md p-density-md", action.iconBg)}>
+                    <Icon name={action.icon} size="var(--tally-icon-size-lg)" className={action.iconColor} />
+                  </div>
+                </div>
+                <div className="mt-density-lg flex justify-end">
+                  <Icon name="arrow_forward" size="var(--tally-icon-size-md)" className="text-muted-foreground transition-all group-hover:text-[#2C365D] group-hover:translate-x-0.5 dark:group-hover:text-[#7c8cb8]" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         <p
@@ -330,7 +279,7 @@ export default function CommunicationsPage() {
 
           {/* Right: Log Communication */}
           <Card className="shadow-none">
-            <CardHeader className="p-density-lg pb-0">
+            <CardHeader className="p-density-lg pb-density-md">
               <CardTitle
                 className="uppercase tracking-wider text-gray-900 dark:text-gray-100"
                 style={{ fontSize: "var(--tally-font-size-sm)" }}
@@ -338,7 +287,7 @@ export default function CommunicationsPage() {
                 Log Communication
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-density-lg">
+            <CardContent className="p-density-lg pt-0">
               <form>
                 <div className="grid grid-cols-2 gap-density-md">
                   <div className="rounded-density-md bg-gray-50 p-density-md dark:bg-gray-800">

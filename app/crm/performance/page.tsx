@@ -117,150 +117,65 @@ export default function PerformancePage() {
         </div>
 
         {/* SLA Overview cards */}
-        <div className="mb-density-xl grid grid-cols-1 gap-density-lg sm:grid-cols-2 lg:grid-cols-4">
-          <Link href="/crm/performance" className="block no-underline">
+        <div className="mb-density-xl grid grid-cols-1 gap-density-lg sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: "First Response SLA", value: "94.2%", sub: "Target: 90%", trend: "+2.4%", trendUp: true, icon: "timer", barClass: "excellent", iconBg: "bg-[#008000]/10 dark:bg-[#008000]/20", iconColor: "text-[#008000] dark:text-green-400" },
+            { label: "Resolution SLA", value: "88.5%", sub: "Target: 85%", trend: "+1.8%", trendUp: true, icon: "check_circle", barClass: "good", iconBg: "bg-[#0074C4]/10 dark:bg-[#0074C4]/20", iconColor: "text-[#0074C4] dark:text-blue-400" },
+            { label: "Customer Satisfaction", value: "76.3%", sub: "Target: 80%", trend: "-1.2%", trendUp: false, icon: "sentiment_satisfied", barClass: "warning", iconBg: "bg-[#C53B00]/10 dark:bg-[#C53B00]/20", iconColor: "text-[#C53B00] dark:text-orange-400" },
+            { label: "SLA Breaches", value: "3", sub: "Response/Resolution", trend: "+1", trendUp: false, icon: "warning", barClass: "danger", iconBg: "bg-[#C40000]/10 dark:bg-[#C40000]/20", iconColor: "text-[#C40000] dark:text-red-400" },
+          ].map((card) => (
             <Card
+              key={card.label}
               className={cn(
-                "relative overflow-hidden shadow-none transition-all hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8] before:absolute before:left-0 before:right-0 before:top-0 before:h-[3px] before:content-['']",
-                slaCardBefore.excellent
+                "relative overflow-hidden shadow-none before:absolute before:left-0 before:right-0 before:top-0 before:h-[3px] before:content-['']",
+                slaCardBefore[card.barClass]
               )}
             >
-              <CardContent className="p-density-lg">
-                <div
-                  className="mb-density-sm font-medium uppercase tracking-wider text-muted-foreground"
-                  style={{ fontSize: "var(--tally-font-size-xs)" }}
-                >
-                  First Response SLA
-                </div>
-                <div
-                  className="mb-density-sm font-bold text-gray-900 dark:text-gray-100"
-                  style={{ fontSize: "var(--tally-font-size-4xl)" }}
-                >
-                  94.2%
-                </div>
-                <div
-                  className="text-muted-foreground"
-                  style={{ fontSize: "var(--tally-font-size-xs)" }}
-                >
-                  Target: <span className="font-semibold">90%</span>
-                </div>
-                <div className="mt-density-sm flex items-center gap-density-xs font-semibold text-[#008000]">
-                  <Icon name="arrow_upward" size="var(--tally-icon-size-sm)" />
-                  <span style={{ fontSize: "var(--tally-font-size-xs)" }}>
-                    +2.4%
-                  </span>
+              <CardContent className="p-density-xl pt-density-xl">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p
+                      className="font-medium text-muted-foreground"
+                      style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    >
+                      {card.label}
+                    </p>
+                    <p
+                      className="mt-density-sm font-bold leading-tight text-gray-900 dark:text-gray-100"
+                      style={{ fontSize: "var(--tally-font-size-3xl)" }}
+                    >
+                      {card.value}
+                    </p>
+                    <div className="mt-density-sm flex items-center gap-density-xs">
+                      <Icon
+                        name={card.trendUp ? "trending_up" : "trending_down"}
+                        size="var(--tally-icon-size-sm)"
+                        className={card.trendUp ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}
+                      />
+                      <span
+                        className={cn(
+                          "font-medium",
+                          card.trendUp ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                        )}
+                        style={{ fontSize: "var(--tally-font-size-xs)" }}
+                      >
+                        {card.trend}
+                      </span>
+                      <span
+                        className="text-muted-foreground"
+                        style={{ fontSize: "var(--tally-font-size-xs)" }}
+                      >
+                        · {card.sub}
+                      </span>
+                    </div>
+                  </div>
+                  <div className={cn("flex shrink-0 items-center justify-center rounded-density-md p-density-md", card.iconBg)}>
+                    <Icon name={card.icon} size="var(--tally-icon-size-lg)" className={card.iconColor} />
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </Link>
-
-          <Link href="/crm/performance" className="block no-underline">
-            <Card
-              className={cn(
-                "relative overflow-hidden shadow-none transition-all hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8] before:absolute before:left-0 before:right-0 before:top-0 before:h-[3px] before:content-['']",
-                slaCardBefore.good
-              )}
-            >
-              <CardContent className="p-density-lg">
-                <div
-                  className="mb-density-sm font-medium uppercase tracking-wider text-muted-foreground"
-                  style={{ fontSize: "var(--tally-font-size-xs)" }}
-                >
-                  Resolution SLA
-                </div>
-                <div
-                  className="mb-density-sm font-bold text-gray-900 dark:text-gray-100"
-                  style={{ fontSize: "var(--tally-font-size-4xl)" }}
-                >
-                  88.5%
-                </div>
-                <div
-                  className="text-muted-foreground"
-                  style={{ fontSize: "var(--tally-font-size-xs)" }}
-                >
-                  Target: <span className="font-semibold">85%</span>
-                </div>
-                <div className="mt-density-sm flex items-center gap-density-xs font-semibold text-[#008000]">
-                  <Icon name="arrow_upward" size="var(--tally-icon-size-sm)" />
-                  <span style={{ fontSize: "var(--tally-font-size-xs)" }}>
-                    +1.8%
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/crm/performance" className="block no-underline">
-            <Card
-              className={cn(
-                "relative overflow-hidden shadow-none transition-all hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8] before:absolute before:left-0 before:right-0 before:top-0 before:h-[3px] before:content-['']",
-                slaCardBefore.warning
-              )}
-            >
-              <CardContent className="p-density-lg">
-                <div
-                  className="mb-density-sm font-medium uppercase tracking-wider text-muted-foreground"
-                  style={{ fontSize: "var(--tally-font-size-xs)" }}
-                >
-                  Customer Satisfaction
-                </div>
-                <div
-                  className="mb-density-sm font-bold text-gray-900 dark:text-gray-100"
-                  style={{ fontSize: "var(--tally-font-size-4xl)" }}
-                >
-                  76.3%
-                </div>
-                <div
-                  className="text-muted-foreground"
-                  style={{ fontSize: "var(--tally-font-size-xs)" }}
-                >
-                  Target: <span className="font-semibold">80%</span>
-                </div>
-                <div className="mt-density-sm flex items-center gap-density-xs font-semibold text-[#C40000]">
-                  <Icon name="arrow_downward" size="var(--tally-icon-size-sm)" />
-                  <span style={{ fontSize: "var(--tally-font-size-xs)" }}>
-                    -1.2%
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          <Link href="/crm/performance" className="block no-underline">
-            <Card
-              className={cn(
-                "relative overflow-hidden shadow-none transition-all hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8] before:absolute before:left-0 before:right-0 before:top-0 before:h-[3px] before:content-['']",
-                slaCardBefore.danger
-              )}
-            >
-              <CardContent className="p-density-lg">
-                <div
-                  className="mb-density-sm font-medium uppercase tracking-wider text-muted-foreground"
-                  style={{ fontSize: "var(--tally-font-size-xs)" }}
-                >
-                  SLA Breaches
-                </div>
-                <div
-                  className="mb-density-sm font-bold text-gray-900 dark:text-gray-100"
-                  style={{ fontSize: "var(--tally-font-size-4xl)" }}
-                >
-                  3
-                </div>
-                <div
-                  className="text-muted-foreground"
-                  style={{ fontSize: "var(--tally-font-size-xs)" }}
-                >
-                  Response/Resolution
-                </div>
-                <div className="mt-density-sm flex items-center gap-density-xs font-semibold text-[#C40000]">
-                  <Icon name="arrow_downward" size="var(--tally-icon-size-sm)" />
-                  <span style={{ fontSize: "var(--tally-font-size-xs)" }}>
-                    +1
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+          ))}
         </div>
 
         {/* Charts grid */}
