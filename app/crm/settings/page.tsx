@@ -56,7 +56,7 @@ const PERMISSIONS_MATRIX = [
   { resource: "Admin", admin: "check", manager: "remove", agent: "close", viewer: "close" },
 ];
 
-function RoleBadge({ role }: { role: string }) {
+function RoleBadge({ role, label }: { role: string; label?: string }) {
   const config: Record<string, "default" | "info" | "warning"> = {
     admin: "default",
     "sales-rep": "info",
@@ -64,7 +64,7 @@ function RoleBadge({ role }: { role: string }) {
     "ops-supervisor": "warning",
   };
   const variant = config[role] ?? "default";
-  return <Badge variant={variant}>{USERS_DATA.find((u) => u.role === role)?.roleLabel ?? role}</Badge>;
+  return <Badge variant={variant}>{label ?? role}</Badge>;
 }
 
 function StatusDot({ status }: { status: "active" | "inactive" | "pending" }) {
