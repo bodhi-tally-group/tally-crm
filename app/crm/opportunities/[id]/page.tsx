@@ -86,7 +86,7 @@ const MOCK_ACTIVITIES = [
   { type: "note", text: "Updated pricing based on volume discount", time: "5 days ago" },
 ];
 
-const MOCK_STAGE_HISTORY = [
+const MOCK_STAGE_HISTORY: { stage: (typeof OPPORTUNITY_STAGES)[number]; date: string; note: string }[] = [
   { stage: "Initial", date: "2025-01-15", note: "Opportunity created" },
   { stage: "Qualification", date: "2025-02-01", note: "Discovery call completed" },
   { stage: "Proposal", date: "2025-02-15", note: "Proposal sent" },
