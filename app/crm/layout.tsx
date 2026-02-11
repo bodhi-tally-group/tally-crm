@@ -21,6 +21,17 @@ const navItems: NavigationItem[] = [
   { id: "communications", label: "Communications", icon: "chat_bubble_outline", href: "/crm/communications" },
   { id: "performance", label: "Performance & SLA", icon: "speed", href: "/crm/performance" },
   { id: "contracts", label: "Contracts", icon: "description", href: "/crm/contracts" },
+  {
+    id: "multi-demo",
+    label: "Multi Demo",
+    icon: "layers",
+    children: [
+      { id: "demo-overview", label: "Overview", href: "#" },
+      { id: "demo-analytics", label: "Analytics", href: "#" },
+      { id: "demo-reports", label: "Reports", href: "#" },
+      { id: "demo-export", label: "Export", href: "#" },
+    ],
+  },
 ];
 
 const bottomNavItems: NavigationItem[] = [
