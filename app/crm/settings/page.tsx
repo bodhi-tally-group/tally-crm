@@ -255,7 +255,7 @@ export default function SettingsPage() {
                             </TableCell>
                             <TableCell style={{ fontSize: "var(--tally-font-size-sm)" }}>
                               <span className="inline-flex items-center">
-                                <StatusDot status={user.status} />
+                                <StatusDot status={user.status as "active" | "inactive" | "pending"} />
                                 {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                               </span>
                             </TableCell>
