@@ -1,0 +1,143 @@
+/* ──────────────────────────────────────────────────────────────────────────
+ * Density System — CSS Custom Properties
+ *
+ * These variables respond to viewport width via media queries so that
+ * every element referencing them automatically adapts.
+ *
+ * Import order: this file is loaded by globals.css AFTER @import "tailwindcss"
+ * so the @theme block below extends the Tailwind theme.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Default: "normal" density (1920 px – 2559 px) ─────────────────────── */
+
+:root {
+  --tally-spacing-xs: 3px;
+  --tally-spacing-sm: 6px;
+  --tally-spacing-md: 12px;
+  --tally-spacing-lg: 16px;
+  --tally-spacing-xl: 24px;
+  --tally-spacing-xxl: 32px;
+
+  --tally-font-size-xs: 11px;
+  --tally-font-size-sm: 13px;
+  --tally-font-size-base: 14px;
+  --tally-font-size-lg: 16px;
+  --tally-font-size-xl: 18px;
+  --tally-font-size-xxl: 20px;
+  --tally-font-size-3xl: 24px;
+  --tally-font-size-4xl: 30px;
+
+  --tally-line-height-tight: 1.2;
+  --tally-line-height-normal: 1.4;
+  --tally-line-height-relaxed: 1.6;
+
+  --tally-icon-size-sm: 14px;
+  --tally-icon-size-md: 18px;
+  --tally-icon-size-lg: 20px;
+  --tally-icon-size-xl: 28px;
+
+  --tally-radius-sm: 3px;
+  --tally-radius-md: 6px;
+  --tally-radius-lg: 10px;
+}
+
+/* ── "comfortable" density (4K displays, ≥ 2560 px) ────────────────────── */
+
+@media (min-width: 2560px) {
+  :root {
+    --tally-spacing-xs: 4px;
+    --tally-spacing-sm: 8px;
+    --tally-spacing-md: 16px;
+    --tally-spacing-lg: 24px;
+    --tally-spacing-xl: 32px;
+    --tally-spacing-xxl: 48px;
+
+    --tally-font-size-xs: 12px;
+    --tally-font-size-sm: 14px;
+    --tally-font-size-base: 16px;
+    --tally-font-size-lg: 18px;
+    --tally-font-size-xl: 20px;
+    --tally-font-size-xxl: 24px;
+    --tally-font-size-3xl: 30px;
+    --tally-font-size-4xl: 36px;
+
+    --tally-line-height-tight: 1.25;
+    --tally-line-height-normal: 1.5;
+    --tally-line-height-relaxed: 1.75;
+
+    --tally-icon-size-sm: 16px;
+    --tally-icon-size-md: 20px;
+    --tally-icon-size-lg: 24px;
+    --tally-icon-size-xl: 32px;
+
+    --tally-radius-sm: 4px;
+    --tally-radius-md: 8px;
+    --tally-radius-lg: 12px;
+  }
+}
+
+/* ── "compact" density (laptops, < 1920 px) ─────────────────────────────── */
+
+@media (max-width: 1919px) {
+  :root {
+    --tally-spacing-xs: 2px;
+    --tally-spacing-sm: 4px;
+    --tally-spacing-md: 8px;
+    --tally-spacing-lg: 12px;
+    --tally-spacing-xl: 16px;
+    --tally-spacing-xxl: 24px;
+
+    --tally-font-size-xs: 10px;
+    --tally-font-size-sm: 12px;
+    --tally-font-size-base: 13px;
+    --tally-font-size-lg: 14px;
+    --tally-font-size-xl: 16px;
+    --tally-font-size-xxl: 18px;
+    --tally-font-size-3xl: 20px;
+    --tally-font-size-4xl: 24px;
+
+    --tally-line-height-tight: 1.15;
+    --tally-line-height-normal: 1.35;
+    --tally-line-height-relaxed: 1.5;
+
+    --tally-icon-size-sm: 12px;
+    --tally-icon-size-md: 16px;
+    --tally-icon-size-lg: 18px;
+    --tally-icon-size-xl: 24px;
+
+    --tally-radius-sm: 2px;
+    --tally-radius-md: 4px;
+    --tally-radius-lg: 8px;
+  }
+}
+
+/* ── Tailwind v4 theme extensions ───────────────────────────────────────── *
+ * These register density-aware utilities so you can write classes like
+ * `p-density-md`, `text-density-base`, `rounded-density-lg`, etc.
+ * The values are CSS custom properties that change with the viewport.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+@theme inline {
+  /* Spacing: p-density-xs … p-density-xxl, gap-density-md, etc. */
+  --spacing-density-xs: var(--tally-spacing-xs);
+  --spacing-density-sm: var(--tally-spacing-sm);
+  --spacing-density-md: var(--tally-spacing-md);
+  --spacing-density-lg: var(--tally-spacing-lg);
+  --spacing-density-xl: var(--tally-spacing-xl);
+  --spacing-density-xxl: var(--tally-spacing-xxl);
+
+  /* Font size: text-density-xs … text-density-xxl */
+  --font-size-density-xs: var(--tally-font-size-xs);
+  --font-size-density-sm: var(--tally-font-size-sm);
+  --font-size-density-base: var(--tally-font-size-base);
+  --font-size-density-lg: var(--tally-font-size-lg);
+  --font-size-density-xl: var(--tally-font-size-xl);
+  --font-size-density-xxl: var(--tally-font-size-xxl);
+  --font-size-density-3xl: var(--tally-font-size-3xl);
+  --font-size-density-4xl: var(--tally-font-size-4xl);
+
+  /* Border radius: rounded-density-sm … rounded-density-lg */
+  --radius-density-sm: var(--tally-radius-sm);
+  --radius-density-md: var(--tally-radius-md);
+  --radius-density-lg: var(--tally-radius-lg);
+}

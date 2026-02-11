@@ -1,0 +1,180 @@
+// ────────────────────────────────────────────────────────────────────────────
+// CRM Module — TypeScript Interfaces
+// ────────────────────────────────────────────────────────────────────────────
+
+/** Case types from CS Energy workshops */
+export type CaseType =
+  | "Complaint"
+  | "Enquiry"
+  | "EWR"
+  | "Onboarding"
+  | "Dunning";
+
+export type CasePriority = "Critical" | "High" | "Medium" | "Low";
+
+export type CaseStatus =
+  | "New"
+  | "In Progress"
+  | "Pending"
+  | "Resolved"
+  | "Closed";
+
+export type SLAStatus = "On Track" | "At Risk" | "Breached";
+
+export type AccountType = "Residential" | "Commercial" | "Industrial";
+
+export type EnergyType = "Electricity" | "Gas" | "Dual Fuel";
+
+// ── Account ─────────────────────────────────────────────────────────────────
+
+export interface Account {
+  id: string;
+  name: string;
+  accountNumber: string;
+  type: AccountType;
+  status: "Active" | "Suspended" | "Closed";
+  nmis: string[];
+  energyType: EnergyType;
+  primaryContact: Contact;
+  contacts: Contact[];
+  address: string;
+  annualConsumption: string;
+  accountBalance: string;
+  lastPaymentDate: string;
+  lastPaymentAmount: string;
+  contractEndDate: string;
+}
+
+// ── Contact ─────────────────────────────────────────────────────────────────
+
+export interface Contact {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  isPrimary: boolean;
+}
+
+// ── Case ────────────────────────────────────────────────────────────────────
+
+export interface CaseItem {
+  id: string;
+  caseNumber: string;
+  accountId: string;
+  accountName: string;
+  type: CaseType;
+  subType: string;
+  status: CaseStatus;
+  priority: CasePriority;
+  slaStatus: SLAStatus;
+  slaDeadline: string;
+  slaTimeRemaining: string;
+  owner: string;
+  team: string;
+  createdDate: string;
+  updatedDate: string;
+  description: string;
+  resolution: string;
+  communications: Communication[];
+  activities: Activity[];
+  attachments: Attachment[];
+  relatedCases: string[];
+}
+
+// ── Communication ───────────────────────────────────────────────────────────
+
+export interface Communication {
+  id: string;
+  type: "Email" | "Phone" | "Note" | "System";
+  direction: "Inbound" | "Outbound" | "Internal";
+  from: string;
+  to: string;
+  subject: string;
+  body: string;
+  timestamp: string;
+  attachments: Attachment[];
+}
+
+// ── Activity ────────────────────────────────────────────────────────────────
+
+export interface Activity {
+  id: string;
+  type:
+    | "Status Change"
+    | "Assignment"
+    | "Comment"
+    | "Attachment"
+    | "SLA Update"
+    | "Created"
+    | "Email Sent"
+    | "Email Received";
+  description: string;
+  user: string;
+  timestamp: string;
+  metadata?: Record<string, string>;
+}
+
+// ── Attachment ───────────────────────────────────────────────────────────────
+
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  uploadedBy: string;
+  uploadedDate: string;
+}
+
+// ── Pipeline / Opportunity ──────────────────────────────────────────────────
+
+export type PipelineStage =
+  | "Discovery"
+  | "Qualification"
+  | "Proposal"
+  | "Negotiation"
+  | "Closed Won"
+  | "Closed Lost";
+
+export interface Opportunity {
+  id: string;
+  name: string;
+  accountId: string;
+  accountName: string;
+  stage: PipelineStage;
+  value: number;
+  probability: number;
+  owner: string;
+  expectedCloseDate: string;
+  createdDate: string;
+  updatedDate: string;
+  description: string;
+  competition: string;
+  energyType: EnergyType;
+  annualVolume: string;
+  contractTerm: string;
+  contacts: Contact[];
+  activities: Activity[];
+  attachments: Attachment[];
+  docuSignStatus: "Not Started" | "Sent" | "Viewed" | "Signed" | "Completed";
+  linkedQuotes: Quote[];
+}
+
+export interface Quote {
+  id: string;
+  name: string;
+  value: number;
+  status: "Draft" | "Sent" | "Accepted" | "Rejected" | "Expired";
+  createdDate: string;
+  expiryDate: string;
+}
+
+// ── Dashboard KPIs ──────────────────────────────────────────────────────────
+
+export interface DashboardKPI {
+  label: string;
+  value: string | number;
+  change?: string;
+  changeType?: "positive" | "negative" | "neutral";
+  icon: string;
+}
