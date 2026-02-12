@@ -239,7 +239,7 @@ export default function CRMDashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-density-sm">
-          <Button variant="outline" size="sm">
+          <Button size="md" className="gap-1.5">
             <Icon name="download" size="var(--tally-icon-size-sm)" className="mr-1" />
             Export
           </Button>

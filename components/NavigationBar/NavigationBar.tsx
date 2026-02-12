@@ -260,7 +260,7 @@ export default function NavigationBar({
                     topSection.onAddEnvironment?.();
                     setEnvFlyoutOpen(false);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#2C365D] hover:bg-gray-100 dark:text-[#7c8cb8] dark:hover:bg-gray-700"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[#006180] hover:bg-gray-100 dark:text-[#80E0FF] dark:hover:bg-gray-700"
                 >
                   <Icon name="add" size={20} />
                   Add environment
@@ -296,7 +296,7 @@ export default function NavigationBar({
                         paddingX,
                         "py-2 text-sm font-normal",
                         active || isOpen
-                          ? "bg-[#2C365D]/10 text-[#2C365D] dark:bg-[#7c8cb8]/20 dark:text-[#7c8cb8]"
+                          ? "bg-[#E6F7FF] text-[#006180] dark:bg-[#006180]/20 dark:text-[#80E0FF]"
                           : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100",
                         item.disabled && "cursor-not-allowed opacity-50"
                       )}
@@ -308,7 +308,7 @@ export default function NavigationBar({
                           className={cn(
                             "shrink-0",
                             (active || isOpen)
-                              ? "text-[#2C365D] dark:text-[#7c8cb8]"
+                              ? "text-[#006180] dark:text-[#80E0FF]"
                               : "text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-100"
                           )}
                         />
@@ -336,7 +336,7 @@ export default function NavigationBar({
                               className={cn(
                                 "flex items-center gap-2 rounded-lg py-2 pr-3 pl-2 text-sm font-normal transition-colors focus:outline-none focus-visible:outline-none",
                                 isActive(child.id)
-                                  ? "bg-[#2C365D]/10 text-[#2C365D] dark:bg-[#7c8cb8]/20 dark:text-[#7c8cb8]"
+                                  ? "bg-[#E6F7FF] text-[#006180] dark:bg-[#006180]/20 dark:text-[#80E0FF]"
                                   : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                               )}
                             >
@@ -376,7 +376,7 @@ export default function NavigationBar({
                           ? "mx-auto h-10 w-10 justify-center px-0 gap-0"
                           : `${paddingX} text-left gap-3`,
                         active
-                          ? "bg-[#2C365D]/10 text-[#2C365D] dark:bg-[#7c8cb8]/20 dark:text-[#7c8cb8]"
+                          ? "bg-[#E6F7FF] text-[#006180] dark:bg-[#006180]/20 dark:text-[#80E0FF]"
                           : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100"
                       )}
                     >
@@ -387,7 +387,7 @@ export default function NavigationBar({
                           className={cn(
                             "shrink-0",
                             active
-                              ? "text-[#2C365D] dark:text-[#7c8cb8]"
+                              ? "text-[#006180] dark:text-[#80E0FF]"
                               : "text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-100"
                           )}
                         />
@@ -414,7 +414,7 @@ export default function NavigationBar({
                           ? "mx-auto h-10 w-10 justify-center px-0 gap-0"
                           : `${paddingX} gap-3`,
                         active
-                          ? "bg-[#2C365D]/10 text-[#2C365D] dark:bg-[#7c8cb8]/20 dark:text-[#7c8cb8]"
+                          ? "bg-[#E6F7FF] text-[#006180] dark:bg-[#006180]/20 dark:text-[#80E0FF]"
                           : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100",
                         item.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent"
                       )}
@@ -426,7 +426,7 @@ export default function NavigationBar({
                           className={cn(
                             "shrink-0",
                             active
-                              ? "text-[#2C365D] dark:text-[#7c8cb8]"
+                              ? "text-[#006180] dark:text-[#80E0FF]"
                               : "text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-100"
                           )}
                         />
@@ -469,7 +469,7 @@ export default function NavigationBar({
                 ? "mx-auto h-10 w-10 justify-center px-0 gap-0"
                 : `${paddingX} gap-3`,
               isActive(item.id)
-                ? "bg-[#2C365D]/10 text-[#2C365D] dark:bg-[#7c8cb8]/20 dark:text-[#7c8cb8]"
+                ? "bg-[#E6F7FF] text-[#006180] dark:bg-[#006180]/20 dark:text-[#80E0FF]"
                 : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100",
               item.disabled && "cursor-not-allowed opacity-50"
             )}
@@ -481,7 +481,7 @@ export default function NavigationBar({
                 className={cn(
                   "shrink-0",
                   isActive(item.id)
-                    ? "text-[#2C365D] dark:text-[#7c8cb8]"
+                    ? "text-[#006180] dark:text-[#80E0FF]"
                     : "text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-100"
                 )}
               />

@@ -104,15 +104,21 @@ export default function PerformancePage() {
             </p>
           </div>
           <div className="flex items-center gap-density-md">
-            <select
-              className="rounded-density-md border border-border bg-white py-1.5 px-3 outline-none focus:border-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-              style={{ fontSize: "var(--tally-font-size-sm)" }}
-            >
-              <option>Last 30 days</option>
-              <option>Last 7 days</option>
-              <option>Last 90 days</option>
-            </select>
-            <Button size="sm">Export Report</Button>
+            <div className="relative min-w-[160px]">
+              <select
+                className="w-full cursor-pointer appearance-none rounded-density-md border border-border bg-white py-1.5 px-3 pr-9 outline-none focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
+                <option>Last 30 days</option>
+                <option>Last 7 days</option>
+                <option>Last 90 days</option>
+              </select>
+              <Icon name="expand_more" size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            </div>
+            <Button size="md" className="gap-1.5">
+              <Icon name="download" size="var(--tally-icon-size-sm)" className="mr-1" />
+              Export Report
+            </Button>
           </div>
         </div>
 

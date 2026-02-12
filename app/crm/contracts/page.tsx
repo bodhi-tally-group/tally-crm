@@ -107,7 +107,7 @@ export default function ContractsPage() {
                 style={{ fontSize: "var(--tally-font-size-sm)" }}
               />
             </div>
-            <Button size="sm" className="gap-1.5">
+            <Button size="md" className="gap-1.5">
               <Icon name="add" size="var(--tally-icon-size-sm)" className="mr-1" />
               Generate Contract
             </Button>

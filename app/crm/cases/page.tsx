@@ -148,7 +148,7 @@ export default function CaseListPage() {
             Manage and track support cases
           </p>
         </div>
-        <Button size="sm" className="gap-1.5">
+        <Button size="md" className="gap-1.5">
           <Icon name="add" size="var(--tally-icon-size-sm)" className="mr-1" />
           New Case
         </Button>

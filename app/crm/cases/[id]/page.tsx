@@ -108,12 +108,12 @@ export default function CaseDetailPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <Icon name="edit" size={16} />
+                <Button variant="outline" size="md" className="gap-1.5">
+                  <Icon name="edit" size="var(--tally-icon-size-sm)" />
                   Edit
                 </Button>
-                <Button variant="outline" size="sm" className="gap-1.5">
-                  <Icon name="person_add" size={16} />
+                <Button variant="outline" size="md" className="gap-1.5">
+                  <Icon name="person_add" size="var(--tally-icon-size-sm)" />
                   Assign
                 </Button>
               </div>

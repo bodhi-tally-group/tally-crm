@@ -202,12 +202,12 @@ export default function OpportunityDetailPage({
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Icon name="description" size="var(--tally-icon-size-md)" />
+              <Button variant="outline" size="md" className="gap-1.5">
+                <Icon name="description" size="var(--tally-icon-size-sm)" />
                 Generate Contract
               </Button>
-              <Button size="sm" className="gap-1.5">
-                <Icon name="swap_horiz" size="var(--tally-icon-size-md)" />
+              <Button size="md" className="gap-1.5">
+                <Icon name="swap_horiz" size="var(--tally-icon-size-sm)" />
                 Change Stage
               </Button>
             </div>
