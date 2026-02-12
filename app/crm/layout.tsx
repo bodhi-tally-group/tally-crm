@@ -124,6 +124,8 @@ export default function CRMLayout({
 
   return (
     <div className="flex h-screen min-w-0 flex-col overflow-hidden bg-[#F9F9FB] dark:bg-gray-900">
+      {/* ── Brand strip ──────────────────────────────────────────────── */}
+      <div className="h-1 shrink-0 bg-[#00C1FF]" />
       {/* ── App Bar ──────────────────────────────────────────────────── */}
       <header className="flex h-14 shrink-0 items-center border-b border-border bg-white px-4 dark:bg-gray-800">
         {/* Logo */}

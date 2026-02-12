@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
@@ -489,6 +490,17 @@ export default function NavigationBar({
             {!collapsed && <span className="truncate">{item.label}</span>}
           </Link>
         ))}
+        {/* Powered by Tally badge */}
+        {!collapsed && (
+          <div className="mt-2 flex justify-start px-4">
+            <Image
+              src="/PoweredByTallyBadge.svg"
+              alt="Powered by Tally"
+              width={123}
+              height={26}
+            />
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setCollapsed(!collapsed)}
