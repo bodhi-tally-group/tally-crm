@@ -70,6 +70,21 @@ export default function CaseDetailPage() {
       {/* Main Content */}
       <div className="min-w-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[1400px] p-density-xl">
+          {/* Breadcrumbs */}
+          <nav className="mb-density-md flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Link href="/crm/dashboard" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+              Dashboard
+            </Link>
+            <Icon name="chevron_right" size={14} />
+            <Link href="/crm/cases" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+              Cases
+            </Link>
+            <Icon name="chevron_right" size={14} />
+            <span className="font-medium text-gray-900 dark:text-gray-100">
+              {caseItem.caseNumber}
+            </span>
+          </nav>
+
           {/* Header */}
           <div className="mb-density-xl">
             <div className="flex items-start justify-between gap-4">

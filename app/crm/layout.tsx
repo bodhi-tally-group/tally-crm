@@ -161,10 +161,10 @@ export default function CRMLayout({
         <div className="ml-6 flex items-center gap-3">
           <button
             type="button"
-            className="relative rounded-density-md p-density-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="relative flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
             aria-label="Notifications"
           >
-            <Icon name="notifications" size="var(--tally-icon-size-md)" className="text-muted-foreground" />
+            <Icon name="notifications" size={20} className="text-muted-foreground" />
             <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />
           </button>
 
@@ -176,7 +176,7 @@ export default function CRMLayout({
               className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#2C365D]"
             >
               <Avatar className="h-8 w-8 cursor-pointer">
-                <AvatarFallback>PS</AvatarFallback>
+                <AvatarFallback>JS</AvatarFallback>
               </Avatar>
             </button>
 
@@ -185,10 +185,10 @@ export default function CRMLayout({
                 {/* User info */}
                 <div className="border-b border-border px-4 py-3 dark:border-gray-700">
                   <p className="font-medium text-gray-900 dark:text-gray-100" style={{ fontSize: "var(--tally-font-size-sm)" }}>
-                    Priya Sharma
+                    John Smith
                   </p>
                   <p className="text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
-                    priya.sharma@tally.com
+                    john.smith@tally.com
                   </p>
                 </div>
 

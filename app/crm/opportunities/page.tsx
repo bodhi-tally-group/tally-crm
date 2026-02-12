@@ -726,10 +726,8 @@ function NewOpportunityModal({ onClose }: { onClose: () => void }) {
   };
 
   const formInput =
-    "w-full rounded-density-md border border-border bg-white py-2 px-3 outline-none focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100";
-  const formLabel = "font-semibold text-gray-900 dark:text-gray-100";
-  const labelSize = { fontSize: "var(--tally-font-size-xs)" };
-  const inputSize = { fontSize: "var(--tally-font-size-sm)" };
+    "h-10 w-full rounded-density-md border border-border bg-white px-3 outline-none placeholder:text-muted-foreground focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100";
+  const formLabel = "text-sm font-medium text-gray-900 dark:text-gray-100";
 
   return (
     <div
@@ -740,94 +738,90 @@ function NewOpportunityModal({ onClose }: { onClose: () => void }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-density-lg border border-border bg-white dark:border-gray-700 dark:bg-gray-900"
+        className="max-h-[90vh] w-full max-w-[640px] overflow-y-auto rounded-xl border border-border bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-border px-density-xl py-density-lg dark:border-gray-700">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-5 dark:border-gray-700">
           <h2
             id="modal-title"
-            className="font-bold text-gray-900 dark:text-gray-100"
-            style={{
-              fontSize: "var(--tally-font-size-xl)",
-              lineHeight: "var(--tally-line-height-tight)",
-            }}
+            className="text-lg font-bold text-gray-900 dark:text-gray-100"
           >
             New Opportunity
           </h2>
-          <Button
-            variant="outline"
-            size="icon"
+          <button
+            type="button"
             onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
             aria-label="Close"
           >
-            <Icon name="close" size="var(--tally-icon-size-md)" />
-          </Button>
+            <Icon name="close" size={18} />
+          </button>
         </div>
+
+        {/* Form */}
         <form onSubmit={handleSubmit}>
-          <div className="p-density-xl">
-            <div className="mb-density-lg grid grid-cols-2 gap-density-lg">
-              <div className="col-span-2 flex flex-col gap-density-sm">
-                <label className={formLabel} style={labelSize}>
-                  Name <span className="text-red-600 dark:text-red-400">*</span>
-                </label>
+          <div className="space-y-5 px-6 py-6">
+            {/* Name */}
+            <div className="space-y-1.5">
+              <label className={formLabel}>
+                Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                className={formInput}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Acme Corp - Renewal"
+                required
+              />
+            </div>
+
+            {/* Owner + Stage */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className={formLabel}>Owner</label>
+                <div className="relative">
+                  <select
+                    className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    value={owner}
+                    onChange={(e) => setOwner(e.target.value)}
+                  >
+                    {OWNER_OPTIONS.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                  <Icon name="expand_more" size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className={formLabel}>Stage</label>
+                <div className="relative">
+                  <select
+                    className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    value={stage}
+                    onChange={(e) => setStage(e.target.value as OpportunityRecord["stage"])}
+                  >
+                    {OPPORTUNITY_STAGES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <Icon name="expand_more" size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                </div>
+              </div>
+            </div>
+
+            {/* Value */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className={formLabel}>Value</label>
                 <input
                   type="text"
                   className={formInput}
-                  style={inputSize}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Acme Corp - Renewal"
-                  required
-                />
-              </div>
-            </div>
-            <div className="mb-density-lg grid grid-cols-2 gap-density-lg">
-              <div className="flex flex-col gap-density-sm">
-                <label className={formLabel} style={labelSize}>
-                  Owner
-                </label>
-                <select
-                  className={cn(formInput, "cursor-pointer")}
-                  style={inputSize}
-                  value={owner}
-                  onChange={(e) => setOwner(e.target.value)}
-                >
-                  {OWNER_OPTIONS.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col gap-density-sm">
-                <label className={formLabel} style={labelSize}>
-                  Stage
-                </label>
-                <select
-                  className={cn(formInput, "cursor-pointer")}
-                  style={inputSize}
-                  value={stage}
-                  onChange={(e) =>
-                    setStage(e.target.value as OpportunityRecord["stage"])
-                  }
-                >
-                  {OPPORTUNITY_STAGES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-density-lg">
-              <div className="flex flex-col gap-density-sm">
-                <label className={formLabel} style={labelSize}>
-                  Value
-                </label>
-                <input
-                  type="text"
-                  className={formInput}
-                  style={inputSize}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
                   placeholder="e.g. 500000"
@@ -835,11 +829,13 @@ function NewOpportunityModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           </div>
-          <div className="flex justify-end gap-density-md border-t border-border px-density-xl py-density-lg dark:border-gray-700">
-            <Button variant="outline" size="sm" type="button" onClick={onClose}>
+
+          {/* Footer */}
+          <div className="flex justify-end gap-3 border-t border-border px-6 py-4 dark:border-gray-700">
+            <Button variant="outline" size="md" type="button" onClick={onClose}>
               Cancel
             </Button>
-            <Button size="sm" type="submit">
+            <Button size="md" type="submit">
               Create Opportunity
             </Button>
           </div>

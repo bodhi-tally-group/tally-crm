@@ -256,59 +256,26 @@ export default function ContractsPage() {
               <option>Failed</option>
             </select>
           </CardHeader>
-          <CardContent className="p-0">
+          <div>
             <div className="overflow-hidden rounded-b-density-md">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
-                    <TableHead
-                      className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      Customer
-                    </TableHead>
-                    <TableHead
-                      className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      Opportunity
-                    </TableHead>
-                    <TableHead
-                      className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      Document
-                    </TableHead>
-                    <TableHead
-                      className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      Generated
-                    </TableHead>
-                    <TableHead
-                      className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      Value
-                    </TableHead>
-                    <TableHead
-                      className="bg-gray-50 font-medium uppercase tracking-wider text-muted-foreground dark:bg-gray-800/50"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    >
-                      Status
-                    </TableHead>
-                    <TableHead
-                      className="bg-gray-50 dark:bg-gray-800/50"
-                      style={{ fontSize: "var(--tally-font-size-xs)" }}
-                    />
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Opportunity</TableHead>
+                    <TableHead>Document</TableHead>
+                    <TableHead>Generated</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {CONTRACTS_DATA.map((row) => (
                     <TableRow key={row.id} className="group">
-                      <TableCell style={{ fontSize: "var(--tally-font-size-sm)" }}>
+                      <TableCell>
                         <div className="flex items-center gap-density-md">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-density-md bg-gray-100 font-medium text-muted-foreground dark:bg-gray-800">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-density-md bg-gray-100 font-medium text-muted-foreground dark:bg-gray-800" style={{ fontSize: "var(--tally-font-size-xs)" }}>
                             {row.initials}
                           </div>
                           <div>
@@ -321,21 +288,21 @@ export default function ContractsPage() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100" style={{ fontSize: "var(--tally-font-size-sm)" }}>
+                      <TableCell className="text-gray-900 dark:text-gray-100">
                         {row.opportunity}
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100" style={{ fontSize: "var(--tally-font-size-sm)" }}>
+                      <TableCell className="text-gray-900 dark:text-gray-100">
                         {row.document}
                       </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100" style={{ fontSize: "var(--tally-font-size-sm)" }}>
+                      <TableCell className="text-gray-500 dark:text-gray-400">
                         {row.generated}
                       </TableCell>
-                      <TableCell style={{ fontSize: "var(--tally-font-size-sm)" }}>
+                      <TableCell>
                         <span className="font-semibold text-gray-900 dark:text-gray-100">
                           {row.value}
                         </span>
                       </TableCell>
-                      <TableCell style={{ fontSize: "var(--tally-font-size-sm)" }}>
+                      <TableCell>
                         <StatusBadge status={row.status} />
                       </TableCell>
                       <TableCell>
@@ -348,7 +315,7 @@ export default function ContractsPage() {
                 </TableBody>
               </Table>
             </div>
-          </CardContent>
+          </div>
         </Card>
 
         <p

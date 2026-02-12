@@ -147,13 +147,13 @@ export default function CommunicationsPage() {
         <div className="grid grid-cols-1 gap-density-lg lg:grid-cols-[1fr_350px]">
           {/* Left: Recent Activity */}
           <Card className="shadow-none">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 p-density-lg pb-0">
-              <CardTitle
-                className="uppercase tracking-wider text-gray-900 dark:text-gray-100"
+            <div className="flex items-center justify-between border-b border-border p-density-lg dark:border-gray-700">
+              <h3
+                className="font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100"
                 style={{ fontSize: "var(--tally-font-size-sm)" }}
               >
                 Recent Activity
-              </CardTitle>
+              </h3>
               <select
                 className="rounded-density-md border border-border bg-white py-1.5 px-3 outline-none focus:border-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                 style={{ fontSize: "var(--tally-font-size-sm)" }}
@@ -166,17 +166,17 @@ export default function CommunicationsPage() {
                 <option value="meeting">Meeting</option>
                 <option value="note">Note</option>
               </select>
-            </CardHeader>
-            <CardContent className="p-density-lg">
-              <div className="relative flex flex-col before:absolute before:bottom-0 before:left-4 before:top-0 before:w-0.5 before:bg-gray-200 before:content-[''] dark:before:bg-gray-700">
+            </div>
+            <div className="p-density-lg">
+              <div className="relative flex flex-col before:absolute before:bottom-0 before:left-[15px] before:top-7 before:w-px before:bg-gray-200 before:content-[''] dark:before:bg-gray-700">
                 {filteredItems.map((item) => (
                   <div
                     key={item.id}
-                    className="relative pb-density-lg pl-10 last:pb-0"
+                    className="relative pb-density-md pl-10 last:pb-0"
                   >
                     <div
                       className={cn(
-                        "absolute left-1 top-0 z-[1] flex h-6 w-6 items-center justify-center rounded-full",
+                        "absolute left-1 top-1 z-[1] flex h-6 w-6 items-center justify-center rounded-full",
                         TIMELINE_ICON_CLASSES[item.type]
                       )}
                     >
@@ -193,8 +193,8 @@ export default function CommunicationsPage() {
                         size="var(--tally-icon-size-sm)"
                       />
                     </div>
-                    <div className="rounded-density-md bg-gray-50 p-density-md dark:bg-gray-800">
-                      <div className="mb-density-sm flex items-center justify-between">
+                    <div className="rounded-density-md border border-border bg-white p-density-md dark:border-gray-700 dark:bg-gray-800">
+                      <div className="mb-1 flex items-center justify-between">
                         <span
                           className={cn(
                             "font-bold uppercase tracking-wider",
@@ -212,19 +212,19 @@ export default function CommunicationsPage() {
                         </span>
                       </div>
                       <div
-                        className="mb-density-xs font-medium text-gray-900 dark:text-gray-100"
+                        className="font-medium text-gray-900 dark:text-gray-100"
                         style={{ fontSize: "var(--tally-font-size-sm)" }}
                       >
                         {item.title} with {item.customer}
                       </div>
                       <div
-                        className="mb-density-xs text-muted-foreground"
-                        style={{ fontSize: "var(--tally-font-size-sm)" }}
+                        className="mt-0.5 text-muted-foreground"
+                        style={{ fontSize: "var(--tally-font-size-xs)" }}
                       >
                         {item.customer}
                       </div>
                       <div
-                        className="mb-density-sm text-gray-700 dark:text-gray-300"
+                        className="mt-1.5 text-gray-700 dark:text-gray-300"
                         style={{
                           fontSize: "var(--tally-font-size-sm)",
                           lineHeight: "var(--tally-line-height-relaxed)",
@@ -233,33 +233,24 @@ export default function CommunicationsPage() {
                         {item.summary}
                       </div>
                       <div
-                        className="flex gap-density-md text-muted-foreground"
+                        className="mt-2 flex gap-density-md text-muted-foreground"
                         style={{ fontSize: "var(--tally-font-size-xs)" }}
                       >
                         {"duration" in item.meta && (
-                          <span className="flex items-center gap-density-xs">
-                            <Icon
-                              name="schedule"
-                              size="var(--tally-icon-size-sm)"
-                            />{" "}
+                          <span className="flex items-center gap-1">
+                            <Icon name="schedule" size={12} />
                             {item.meta.duration}
                           </span>
                         )}
                         {"user" in item.meta && (
-                          <span className="flex items-center gap-density-xs">
-                            <Icon
-                              name="person"
-                              size="var(--tally-icon-size-sm)"
-                            />{" "}
+                          <span className="flex items-center gap-1">
+                            <Icon name="person" size={12} />
                             {item.meta.user}
                           </span>
                         )}
                         {"attachments" in item.meta && (
-                          <span className="flex items-center gap-density-xs">
-                            <Icon
-                              name="attach_file"
-                              size="var(--tally-icon-size-sm)"
-                            />{" "}
+                          <span className="flex items-center gap-1">
+                            <Icon name="attach_file" size={12} />
                             {item.meta.attachments}
                           </span>
                         )}
@@ -268,7 +259,7 @@ export default function CommunicationsPage() {
                   </div>
                 ))}
               </div>
-            </CardContent>
+            </div>
           </Card>
 
           {/* Right: Log Communication */}

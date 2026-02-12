@@ -286,7 +286,7 @@ export default function CRMDashboardPage() {
             <CardTitle>Cases by Type</CardTitle>
             <CardDescription>Open and resolved case breakdown</CardDescription>
           </CardHeader>
-          <CardContent>
+          <div className="px-density-xl pb-density-xl">
             <div style={{ height: "220px" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={casesByType} layout="vertical">
@@ -309,7 +309,7 @@ export default function CRMDashboardPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
+          </div>
         </Card>
 
         {/* SLA Performance */}
@@ -318,7 +318,7 @@ export default function CRMDashboardPage() {
             <CardTitle>SLA Performance</CardTitle>
             <CardDescription>Distribution by SLA status</CardDescription>
           </CardHeader>
-          <CardContent>
+          <div className="px-density-xl pb-density-xl">
             <div className="flex items-center justify-center" style={{ height: "220px" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -366,7 +366,7 @@ export default function CRMDashboardPage() {
                 </div>
               ))}
             </div>
-          </CardContent>
+          </div>
         </Card>
 
         {/* Pipeline by Stage */}
@@ -375,7 +375,7 @@ export default function CRMDashboardPage() {
             <CardTitle>Pipeline by Stage</CardTitle>
             <CardDescription>Opportunity value by stage</CardDescription>
           </CardHeader>
-          <CardContent>
+          <div className="px-density-xl pb-density-xl">
             <div style={{ height: "220px" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={pipelineByStage}>
@@ -406,7 +406,7 @@ export default function CRMDashboardPage() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
