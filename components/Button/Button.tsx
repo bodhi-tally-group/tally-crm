@@ -59,23 +59,25 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed box-border";
 
   const variantStyles = {
     primary:
-      "bg-[#2C365D] text-white hover:bg-[#1e2840] focus:ring-[#2C365D]",
+      "border-2 border-transparent bg-[#2C365D] text-white hover:bg-[#1e2840] focus:ring-[#2C365D] dark:bg-[#7c8cb8] dark:hover:bg-[#6b7ba8] dark:focus:ring-[#7c8cb8]",
     secondary:
-      "bg-[#00D2A2] text-white hover:bg-[#00b890] focus:ring-[#00D2A2]",
+      "border-2 border-transparent bg-[#00D2A2] text-white hover:bg-[#00b890] focus:ring-[#00D2A2] dark:bg-[#00D2A2] dark:hover:bg-[#00b890] dark:focus:ring-[#00D2A2]",
     outline:
-      "border-2 border-[#2C365D] text-[#2C365D] bg-transparent hover:bg-[#2C365D] hover:text-white focus:ring-[#2C365D]",
+      "border-2 border-[#2C365D] text-[#2C365D] bg-transparent hover:bg-[#2C365D] hover:text-white focus:ring-[#2C365D] dark:border-[#9ca8d0] dark:text-gray-100 dark:hover:bg-[#7c8cb8] dark:hover:text-white dark:focus:ring-[#7c8cb8]",
     ghost:
-      "text-[#2C365D] bg-transparent hover:bg-[#2C365D]/10 focus:ring-[#2C365D]",
+      "border-2 border-transparent text-[#2C365D] bg-transparent hover:bg-[#2C365D]/10 focus:ring-[#2C365D] dark:text-gray-200 dark:hover:bg-white/10 dark:focus:ring-[#7c8cb8]",
     success:
-      "bg-[#008000] text-white hover:bg-[#006600] focus:ring-[#008000]",
+      "border-2 border-transparent bg-[#008000] text-white hover:bg-[#006600] focus:ring-[#008000]",
     warning:
-      "bg-[#C53B00] text-white hover:bg-[#a03000] focus:ring-[#C53B00]",
-    error: "bg-[#C40000] text-white hover:bg-[#a00000] focus:ring-[#C40000]",
-    info: "bg-[#0074C4] text-white hover:bg-[#005a9a] focus:ring-[#0074C4]",
+      "border-2 border-transparent bg-[#C53B00] text-white hover:bg-[#a03000] focus:ring-[#C53B00]",
+    error:
+      "border-2 border-transparent bg-[#C40000] text-white hover:bg-[#a00000] focus:ring-[#C40000]",
+    info:
+      "border-2 border-transparent bg-[#0074C4] text-white hover:bg-[#005a9a] focus:ring-[#0074C4]",
   };
 
   const widthStyles = fullWidth ? "w-full" : "";

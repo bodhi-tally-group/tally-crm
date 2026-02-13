@@ -8,13 +8,20 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
   ({ className, variant = "default", ...props }, ref) => {
     const variantStyles = {
-      default: "bg-[#2C365D] text-white",
-      secondary: "bg-[#00D2A2] text-white",
-      success: "bg-[#008000] text-white",
-      warning: "bg-[#C53B00] text-white",
-      error: "bg-[#C40000] text-white",
-      info: "bg-[#0074C4] text-white",
-      outline: "border border-[#2C365D] text-[#2C365D] bg-transparent",
+      default:
+        "bg-[#2C365D] text-white dark:bg-[#7c8cb8] dark:text-white",
+      secondary:
+        "bg-[#00D2A2] text-white dark:bg-[#00D2A2] dark:text-white",
+      success:
+        "bg-[#008000] text-white dark:bg-[#22c55e] dark:text-white",
+      warning:
+        "bg-[#C53B00] text-white dark:bg-[#ea580c] dark:text-white",
+      error:
+        "bg-[#C40000] text-white dark:bg-[#dc2626] dark:text-white",
+      info:
+        "bg-[#0074C4] text-white dark:bg-[#0ea5e9] dark:text-white",
+      outline:
+        "border border-[#2C365D] text-[#2C365D] bg-transparent dark:border-gray-400 dark:text-gray-200 dark:bg-gray-700/50",
     };
 
     return (
