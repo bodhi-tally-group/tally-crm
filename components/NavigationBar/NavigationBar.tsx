@@ -490,31 +490,34 @@ export default function NavigationBar({
             {!collapsed && <span className="truncate">{item.label}</span>}
           </Link>
         ))}
-        {/* Powered by Tally badge */}
-        {!collapsed && (
-          <div className="mt-2 flex justify-start px-4">
+        {/* Powered by Tally badge + collapse toggle */}
+        {!collapsed ? (
+          <div className="mt-2 flex items-center justify-between px-4">
             <Image
               src="/PoweredByTallyBadge.svg"
               alt="Powered by Tally"
               width={123}
               height={26}
             />
+            <button
+              type="button"
+              onClick={() => setCollapsed(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+              aria-label="Collapse navigation"
+            >
+              <Icon name="chevron_left" size={20} />
+            </button>
           </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+            aria-label="Expand navigation"
+          >
+            <Icon name="chevron_right" size={20} />
+          </button>
         )}
-        <button
-          type="button"
-          onClick={() => setCollapsed(!collapsed)}
-          className={cn(
-            "flex w-full items-center rounded-lg py-2 text-sm font-normal text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:outline-none dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100",
-            collapsed
-              ? "mx-auto h-10 w-10 justify-center px-0 gap-0"
-              : `${paddingX} justify-start gap-3`
-          )}
-          aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
-        >
-          <Icon name={collapsed ? "chevron_right" : "chevron_left"} size={20} />
-          {!collapsed && <span>Collapse</span>}
-        </button>
       </div>
 
       {/* Fixed tooltip for collapsed state — rendered outside overflow containers */}

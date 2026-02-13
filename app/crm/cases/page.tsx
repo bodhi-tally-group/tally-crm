@@ -15,11 +15,65 @@ import Button from "@/components/Button/Button";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 import { mockCases } from "@/lib/mock-data/cases";
+import { mockAccounts } from "@/lib/mock-data/accounts";
 import SLAIndicator from "@/components/crm/SLAIndicator";
-import type { CaseItem, CasePriority } from "@/types/crm";
+import type { CaseItem, CasePriority, CaseStatus, CaseType } from "@/types/crm";
 
-type FilterView = "all" | "my" | "unassigned";
-type SortField = "caseNumber" | "createdDate" | "priority" | "slaStatus";
+const CASE_TYPES: CaseType[] = ["Complaint", "Enquiry", "EWR", "Onboarding", "Dunning"];
+const CASE_PRIORITIES: CasePriority[] = ["Critical", "High", "Medium", "Low"];
+const CASE_ORIGINS = ["Phone", "Email", "Web", "Chat", "Social Media"] as const;
+const CASE_REASONS = [
+  "Billing Dispute",
+  "Service Quality",
+  "Meter Issue",
+  "Rate Review",
+  "New Connection",
+  "Contract Amendment",
+  "Payment Issue",
+  "General Enquiry",
+  "Other",
+] as const;
+const OWNER_OPTIONS = ["Priya Sharma", "Daniel Cooper", "John Smith", "Unassigned"];
+
+type ViewMode = "kanban" | "list";
+
+const CASE_STATUSES: CaseStatus[] = [
+  "New",
+  "In Progress",
+  "Pending",
+  "Resolved",
+  "Closed",
+];
+
+const statusColors: Record<CaseStatus, string> = {
+  New: "bg-blue-500",
+  "In Progress": "bg-[#0074C4]",
+  Pending: "bg-[#C53B00]",
+  Resolved: "bg-[#008000]",
+  Closed: "bg-gray-400",
+};
+
+type ListViewId =
+  | "all"
+  | "all_open"
+  | "my"
+  | "my_open"
+  | "recently_viewed"
+  | "recently_viewed_cases"
+  | "support_queue"
+  | "unassigned";
+
+const LIST_VIEWS: { id: ListViewId; label: string; pinned?: boolean }[] = [
+  { id: "all", label: "All Cases", pinned: true },
+  { id: "all_open", label: "All Open Cases" },
+  { id: "my", label: "My Cases" },
+  { id: "my_open", label: "My Open Cases" },
+  { id: "recently_viewed", label: "Recently Viewed" },
+  { id: "recently_viewed_cases", label: "Recently Viewed Cases" },
+  { id: "support_queue", label: "Support Queue" },
+  { id: "unassigned", label: "Unassigned" },
+];
+type SortField = "caseNumber" | "accountName" | "type" | "status" | "priority" | "slaStatus" | "owner" | "createdDate";
 type SortDirection = "asc" | "desc";
 
 const priorityOrder: Record<CasePriority, number> = {
@@ -35,6 +89,14 @@ const slaOrder: Record<string, number> = {
   "On Track": 2,
 };
 
+const statusOrder: Record<string, number> = {
+  New: 0,
+  "In Progress": 1,
+  Pending: 2,
+  Resolved: 3,
+  Closed: 4,
+};
+
 const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline"> = {
   Critical: "error",
   High: "warning",
@@ -43,10 +105,56 @@ const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outl
 };
 
 export default function CaseListPage() {
-  const [filterView, setFilterView] = React.useState<FilterView>("all");
+  const [viewMode, setViewMode] = React.useState<ViewMode>("list");
+  const [listView, setListView] = React.useState<ListViewId>("all");
+  const [listViewOpen, setListViewOpen] = React.useState(false);
+  const listViewRef = React.useRef<HTMLDivElement>(null);
+  const kanbanRef = React.useRef<HTMLDivElement>(null);
+  const [cases, setCases] = React.useState(mockCases);
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [accountFilter, setAccountFilter] = React.useState("");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortField, setSortField] = React.useState<SortField>("createdDate");
   const [sortDir, setSortDir] = React.useState<SortDirection>("desc");
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    if (!listViewOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (listViewRef.current && !listViewRef.current.contains(e.target as Node)) {
+        setListViewOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [listViewOpen]);
+
+  // Convert vertical mouse-wheel into horizontal scroll for kanban board
+  React.useEffect(() => {
+    const el = kanbanRef.current;
+    if (!el || viewMode !== "kanban") return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      if (el.scrollWidth <= el.clientWidth) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [viewMode]);
+
+  const accountNames = React.useMemo(
+    () => Array.from(new Set(mockCases.map((c) => c.accountName))).sort(),
+    []
+  );
+
+  const handleDrop = (caseId: string, newStatus: CaseStatus) => {
+    setCases((prev) =>
+      prev.map((c) => (c.id === caseId ? { ...c, status: newStatus } : c))
+    );
+  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -58,12 +166,35 @@ export default function CaseListPage() {
   };
 
   const filtered = React.useMemo(() => {
-    let result = [...mockCases];
+    let result = [...cases];
 
-    if (filterView === "my") {
-      result = result.filter((c) => c.owner === "Priya Sharma");
-    } else if (filterView === "unassigned") {
-      result = result.filter((c) => c.owner === "Unassigned");
+    // Apply list-view filter
+    switch (listView) {
+      case "my":
+        result = result.filter((c) => c.owner === "John Smith");
+        break;
+      case "my_open":
+        result = result.filter(
+          (c) => c.owner === "John Smith" && c.status !== "Closed" && c.status !== "Resolved"
+        );
+        break;
+      case "all_open":
+        result = result.filter((c) => c.status !== "Closed" && c.status !== "Resolved");
+        break;
+      case "unassigned":
+        result = result.filter((c) => c.owner === "Unassigned");
+        break;
+      case "support_queue":
+        result = result.filter((c) => c.team === "Large Market Support");
+        break;
+      // "all", "recently_viewed", "recently_viewed_cases" show all for now
+      default:
+        break;
+    }
+
+    // Account filter
+    if (accountFilter) {
+      result = result.filter((c) => c.accountName === accountFilter);
     }
 
     if (searchQuery.trim()) {
@@ -82,10 +213,18 @@ export default function CaseListPage() {
       switch (sortField) {
         case "caseNumber":
           return dir * a.caseNumber.localeCompare(b.caseNumber);
+        case "accountName":
+          return dir * a.accountName.localeCompare(b.accountName);
+        case "type":
+          return dir * a.type.localeCompare(b.type);
+        case "status":
+          return dir * ((statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99));
         case "priority":
           return dir * (priorityOrder[a.priority] - priorityOrder[b.priority]);
         case "slaStatus":
-          return dir * (slaOrder[a.slaStatus] - slaOrder[b.slaStatus]);
+          return dir * ((slaOrder[a.slaStatus] ?? 99) - (slaOrder[b.slaStatus] ?? 99));
+        case "owner":
+          return dir * a.owner.localeCompare(b.owner);
         case "createdDate":
         default:
           return dir * a.createdDate.localeCompare(b.createdDate);
@@ -93,32 +232,24 @@ export default function CaseListPage() {
     });
 
     return result;
-  }, [filterView, searchQuery, sortField, sortDir]);
+  }, [cases, listView, accountFilter, searchQuery, sortField, sortDir]);
 
-  const counts = React.useMemo(() => {
-    return {
-      all: mockCases.length,
-      my: mockCases.filter((c) => c.owner === "Priya Sharma").length,
-      unassigned: mockCases.filter((c) => c.owner === "Unassigned").length,
-    };
-  }, []);
+  const kanbanByStatus = React.useMemo(() => {
+    const byStatus: Record<string, CaseItem[]> = {};
+    for (const status of CASE_STATUSES) {
+      byStatus[status] = filtered.filter((c) => c.status === status);
+    }
+    return byStatus;
+  }, [filtered]);
 
-  const SortHeader = ({
-    field,
-    children,
-    className,
-  }: {
-    field: SortField;
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <TableHead className={className}>
+  const renderSortHeader = (field: SortField, label: string, className?: string) => (
+    <TableHead key={field} className={className}>
       <button
         type="button"
         onClick={() => handleSort(field)}
         className="inline-flex items-center gap-1 font-medium hover:text-gray-900 dark:hover:text-gray-100"
       >
-        {children}
+        {label}
         {sortField === field && (
           <Icon
             name={sortDir === "asc" ? "arrow_upward" : "arrow_downward"}
@@ -148,7 +279,7 @@ export default function CaseListPage() {
             Manage and track support cases
           </p>
         </div>
-        <Button size="md" className="gap-1.5">
+        <Button size="md" className="gap-1.5" onClick={() => setModalOpen(true)}>
           <Icon name="add" size="var(--tally-icon-size-sm)" className="mr-1" />
           New Case
         </Button>
@@ -156,26 +287,86 @@ export default function CaseListPage() {
 
       {/* Filters */}
       <div className="mb-density-lg flex flex-wrap items-center gap-density-md">
-        {/* View toggle */}
-        <div className="inline-flex rounded-density-md border border-border bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900">
-          {(["all", "my", "unassigned"] as FilterView[]).map((view) => (
-            <button
-              key={view}
-              type="button"
-              onClick={() => setFilterView(view)}
-              className={cn(
-                "rounded-md px-3 py-1.5 font-medium transition-colors",
-                filterView === view
-                  ? "bg-[#2C365D] text-white"
-                  : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              )}
-              style={{ fontSize: "var(--tally-font-size-xs)" }}
-            >
-              {view === "all" && `All Cases (${counts.all})`}
-              {view === "my" && `My Cases (${counts.my})`}
-              {view === "unassigned" && `Unassigned (${counts.unassigned})`}
-            </button>
-          ))}
+        {/* List view dropdown */}
+        <div ref={listViewRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setListViewOpen((o) => !o)}
+            className={cn(
+              "flex items-center gap-2 rounded-density-md border border-border bg-white py-2 pl-3 pr-9 font-medium transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+            )}
+            style={{ fontSize: "var(--tally-font-size-sm)" }}
+          >
+            {LIST_VIEWS.find((v) => v.id === listView)?.label ?? "All Cases"}
+            <span className="text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+              ({filtered.length})
+            </span>
+          </button>
+          <Icon
+            name="expand_more"
+            size={16}
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+
+          {/* Dropdown menu */}
+          {listViewOpen && (
+            <div className="absolute left-0 top-full z-50 mt-1 min-w-[240px] rounded-lg border border-border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
+              <div
+                className="px-3 py-1.5 font-bold uppercase tracking-wider text-muted-foreground"
+                style={{ fontSize: "var(--tally-font-size-xs)" }}
+              >
+                List Views
+              </div>
+              {LIST_VIEWS.map((view) => (
+                <button
+                  key={view.id}
+                  type="button"
+                  onClick={() => {
+                    setListView(view.id);
+                    setListViewOpen(false);
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors",
+                    listView === view.id
+                      ? "text-gray-900 dark:text-gray-100"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                  )}
+                >
+                  {listView === view.id ? (
+                    <Icon name="check" size={16} className="shrink-0 text-[#008000] dark:text-green-400" />
+                  ) : (
+                    <span className="w-4 shrink-0" />
+                  )}
+                  <span>{view.label}</span>
+                  {view.pinned && (
+                    <span className="ml-auto text-xs text-muted-foreground">(Pinned list)</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Account filter dropdown */}
+        <div className="relative max-w-[180px]">
+          <select
+            value={accountFilter}
+            onChange={(e) => setAccountFilter(e.target.value)}
+            className="w-full cursor-pointer truncate appearance-none rounded-density-md border border-border bg-white py-2 pl-3 pr-9 font-medium transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-gray-100"
+            style={{ fontSize: "var(--tally-font-size-sm)" }}
+          >
+            <option value="">All Accounts</option>
+            {accountNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <Icon
+            name="expand_more"
+            size={16}
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
         </div>
 
         {/* Search */}
@@ -193,93 +384,287 @@ export default function CaseListPage() {
             style={{ fontSize: "var(--tally-font-size-sm)" }}
           />
         </div>
-      </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-density-md border border-border bg-white dark:border-gray-700 dark:bg-gray-900">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <SortHeader field="caseNumber">Case #</SortHeader>
-              <TableHead>Account</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <SortHeader field="priority">Priority</SortHeader>
-              <SortHeader field="slaStatus">SLA</SortHeader>
-              <TableHead>Owner</TableHead>
-              <SortHeader field="createdDate">Created</SortHeader>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((caseItem) => (
-              <TableRow key={caseItem.id} className="group">
-                <TableCell>
-                  <Link
-                    href={`/crm/cases/${caseItem.id}`}
-                    className="font-medium text-[#2C365D] hover:underline dark:text-[#7c8cb8]"
-                  >
-                    {caseItem.caseNumber}
-                  </Link>
-                </TableCell>
-                <TableCell className="max-w-[200px] truncate text-gray-700 dark:text-gray-300">
-                  {caseItem.accountName}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">{caseItem.type}</Badge>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={caseItem.status} />
-                </TableCell>
-                <TableCell>
-                  <Badge variant={priorityVariant[caseItem.priority]}>
-                    {caseItem.priority}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <SLAIndicator
-                    status={caseItem.slaStatus}
-                    timeRemaining={caseItem.slaTimeRemaining}
-                  />
-                </TableCell>
-                <TableCell className="text-gray-700 dark:text-gray-300">
-                  {caseItem.owner}
-                </TableCell>
-                <TableCell className="text-gray-500 dark:text-gray-400">
-                  {caseItem.createdDate}
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
-                  No cases match your filters.
-                </TableCell>
-              </TableRow>
+        {/* View toggle */}
+        <div className="inline-flex rounded-density-md border border-border bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900">
+          <button
+            type="button"
+            onClick={() => setViewMode("kanban")}
+            className={cn(
+              "flex items-center rounded px-2.5 py-1 font-medium transition-colors",
+              viewMode === "kanban"
+                ? "bg-[#2C365D] text-white"
+                : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
             )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Summary */}
-      <div className="mt-density-md flex items-center justify-between text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
-        <span>
-          Showing {filtered.length} of {mockCases.length} cases
-        </span>
-        <div className="flex items-center gap-density-lg">
-          <span className="flex items-center gap-density-xs">
-            <span className="inline-block h-2 w-2 rounded-full bg-[#C40000]" />
-            {mockCases.filter((c) => c.slaStatus === "Breached").length} breached
-          </span>
-          <span className="flex items-center gap-density-xs">
-            <span className="inline-block h-2 w-2 rounded-full bg-[#C53B00]" />
-            {mockCases.filter((c) => c.slaStatus === "At Risk").length} at risk
-          </span>
+            style={{ fontSize: "var(--tally-font-size-xs)" }}
+          >
+            <Icon name="view_kanban" size="var(--tally-icon-size-sm)" className="mr-1" />
+            Kanban
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            className={cn(
+              "flex items-center rounded px-2.5 py-1 font-medium transition-colors",
+              viewMode === "list"
+                ? "bg-[#2C365D] text-white"
+                : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            )}
+            style={{ fontSize: "var(--tally-font-size-xs)" }}
+          >
+            <Icon name="list" size="var(--tally-icon-size-sm)" className="mr-1" />
+            List
+          </button>
         </div>
       </div>
+
+      {/* Kanban view */}
+      {viewMode === "kanban" && (
+        <div
+          ref={kanbanRef}
+          style={{ overflowX: "auto" }}
+        >
+          <div
+            className="grid gap-density-lg pb-density-md"
+            style={{ gridTemplateColumns: `repeat(${CASE_STATUSES.length}, minmax(260px, 1fr))` }}
+          >
+            {CASE_STATUSES.map((status) => {
+              const statusCases = kanbanByStatus[status] ?? [];
+              return (
+                <CaseKanbanColumn
+                  key={status}
+                  status={status}
+                  cases={statusCases}
+                  onDrop={handleDrop}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* List view */}
+      {viewMode === "list" && (
+        <>
+          <div className="overflow-hidden rounded-density-md border border-border bg-white dark:border-gray-700 dark:bg-gray-900">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  {renderSortHeader("caseNumber", "Case #")}
+                  {renderSortHeader("accountName", "Account")}
+                  {renderSortHeader("type", "Type")}
+                  {renderSortHeader("status", "Status")}
+                  {renderSortHeader("priority", "Priority")}
+                  {renderSortHeader("slaStatus", "SLA")}
+                  {renderSortHeader("owner", "Owner")}
+                  {renderSortHeader("createdDate", "Created")}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map((caseItem) => (
+                  <TableRow key={caseItem.id} className="group">
+                    <TableCell>
+                      <Link
+                        href={`/crm/cases/${caseItem.id}`}
+                        className="font-medium text-[#2C365D] hover:underline dark:text-[#7c8cb8]"
+                      >
+                        {caseItem.caseNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate text-gray-700 dark:text-gray-300">
+                      {caseItem.accountName}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{caseItem.type}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={caseItem.status} />
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={priorityVariant[caseItem.priority]}>
+                        {caseItem.priority}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <SLAIndicator
+                        status={caseItem.slaStatus}
+                        timeRemaining={caseItem.slaTimeRemaining}
+                      />
+                    </TableCell>
+                    <TableCell className="text-gray-700 dark:text-gray-300">
+                      {caseItem.owner}
+                    </TableCell>
+                    <TableCell className="text-gray-500 dark:text-gray-400">
+                      {caseItem.createdDate}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
+                      No cases match your filters.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Summary */}
+          <div className="mt-density-md flex items-center justify-between text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+            <span>
+              Showing {filtered.length} of {cases.length} cases
+            </span>
+            <div className="flex items-center gap-density-lg">
+              <span className="flex items-center gap-density-xs">
+                <span className="inline-block h-2 w-2 rounded-full bg-[#C40000]" />
+                {cases.filter((c) => c.slaStatus === "Breached").length} breached
+              </span>
+              <span className="flex items-center gap-density-xs">
+                <span className="inline-block h-2 w-2 rounded-full bg-[#C53B00]" />
+                {cases.filter((c) => c.slaStatus === "At Risk").length} at risk
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* New Case Modal */}
+      {modalOpen && (
+        <NewCaseModal
+          onClose={() => setModalOpen(false)}
+          onCreate={(newCase) => {
+            setCases((prev) => [newCase, ...prev]);
+          }}
+          caseCount={cases.length}
+        />
+      )}
     </div>
     </div>
   );
 }
+
+/* ─── Kanban Column ────────────────────────────────────────────────────── */
+
+function CaseKanbanColumn({
+  status,
+  cases: columnCases,
+  onDrop,
+}: {
+  status: CaseStatus;
+  cases: CaseItem[];
+  onDrop: (caseId: string, newStatus: CaseStatus) => void;
+}) {
+  const [isDragOver, setIsDragOver] = React.useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+  const handleDragLeave = () => setIsDragOver(false);
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const caseId = e.dataTransfer.getData("text/plain");
+    if (caseId) onDrop(caseId, status);
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 flex-col rounded-lg border border-border bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50",
+        isDragOver &&
+          "border-[#2C365D] bg-[#2C365D]/5 dark:border-[#7c8cb8] dark:bg-[#7c8cb8]/5"
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Column header */}
+      <div className="flex items-center justify-between rounded-t-lg border-b border-border bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
+        <div className="flex items-center gap-2">
+          <span className={cn("h-2.5 w-2.5 rounded-full", statusColors[status])} />
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {status}
+          </span>
+          <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+            {columnCases.length}
+          </span>
+        </div>
+      </div>
+
+      {/* Cards */}
+      <div className="flex min-h-[120px] flex-1 flex-col gap-2 overflow-y-auto p-2">
+        {columnCases.map((c) => (
+          <CaseKanbanCard key={c.id} caseItem={c} />
+        ))}
+        {columnCases.length === 0 && (
+          <div className="flex flex-1 items-center justify-center py-8 text-sm text-muted-foreground">
+            No cases
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Kanban Card ─────────────────────────────────────────────────────── */
+
+function CaseKanbanCard({ caseItem }: { caseItem: CaseItem }) {
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", caseItem.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  return (
+    <Link
+      href={`/crm/cases/${caseItem.id}`}
+      draggable
+      onDragStart={handleDragStart}
+      className="block cursor-grab rounded-lg border border-border bg-white p-3 shadow-sm transition-shadow hover:shadow-md active:cursor-grabbing dark:border-gray-700 dark:bg-gray-900"
+    >
+      {/* Case number + priority */}
+      <div className="flex items-center justify-between">
+        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+          {caseItem.caseNumber}
+        </p>
+        <Badge
+          variant={priorityVariant[caseItem.priority]}
+          className="shrink-0 text-[10px]"
+        >
+          {caseItem.priority}
+        </Badge>
+      </div>
+
+      {/* Account name */}
+      <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+        {caseItem.accountName}
+      </p>
+
+      {/* Type + SLA row */}
+      <div className="mt-2 flex items-center justify-between">
+        <Badge variant="outline" className="text-[10px]">
+          {caseItem.type}
+        </Badge>
+        <SLAIndicator
+          status={caseItem.slaStatus}
+          timeRemaining={caseItem.slaTimeRemaining}
+        />
+      </div>
+
+      {/* Owner + Date */}
+      <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Icon name="person" size={12} />
+          {caseItem.owner}
+        </span>
+        <span>{caseItem.createdDate}</span>
+      </div>
+    </Link>
+  );
+}
+
+/* ─── Status Badge (for list view) ────────────────────────────────────── */
 
 function StatusBadge({ status }: { status: CaseItem["status"] }) {
   const config: Record<
@@ -300,5 +685,575 @@ function StatusBadge({ status }: { status: CaseItem["status"] }) {
       {c.dot && <span className={cn("inline-block h-1.5 w-1.5 rounded-full", c.dot)} />}
       {status}
     </Badge>
+  );
+}
+
+/* ─── New Case Modal ──────────────────────────────────────────────────── */
+
+function NewCaseModal({
+  onClose,
+  onCreate,
+  caseCount,
+}: {
+  onClose: () => void;
+  onCreate: (newCase: CaseItem) => void;
+  caseCount: number;
+}) {
+  // ── Form state ──────────────────────────────────────────────────────
+  const [contactName, setContactName] = React.useState("");
+  const [accountId, setAccountId] = React.useState("");
+  const [webEmail, setWebEmail] = React.useState("");
+  const [status, setStatus] = React.useState<CaseStatus>("New");
+  const [caseOrigin, setCaseOrigin] = React.useState("");
+  const [caseType, setCaseType] = React.useState<CaseType | "">("");
+  const [priority, setPriority] = React.useState<CasePriority>("Medium");
+  const [caseReason, setCaseReason] = React.useState("");
+  const [subject, setSubject] = React.useState("");
+  const [description, setDescription] = React.useState("");
+  const [owner, setOwner] = React.useState(OWNER_OPTIONS[0] ?? "");
+  const [caseDocumentation, setCaseDocumentation] = React.useState("");
+
+  // ── Account search ──────────────────────────────────────────────────
+  const [accountSearch, setAccountSearch] = React.useState("");
+  const [accountDropdownOpen, setAccountDropdownOpen] = React.useState(false);
+  const accountInputRef = React.useRef<HTMLInputElement>(null);
+
+  const filteredAccounts = React.useMemo(() => {
+    if (!accountSearch) return mockAccounts;
+    const q = accountSearch.toLowerCase();
+    return mockAccounts.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        a.accountNumber.toLowerCase().includes(q)
+    );
+  }, [accountSearch]);
+
+  const selectedAccount = mockAccounts.find((a) => a.id === accountId);
+
+  // ── Contact search ──────────────────────────────────────────────────
+  const [contactSearch, setContactSearch] = React.useState("");
+  const [contactDropdownOpen, setContactDropdownOpen] = React.useState(false);
+  const contactInputRef = React.useRef<HTMLInputElement>(null);
+
+  const availableContacts = React.useMemo(() => {
+    const acc = mockAccounts.find((a) => a.id === accountId);
+    return acc?.contacts ?? [];
+  }, [accountId]);
+
+  const filteredContacts = React.useMemo(() => {
+    if (!contactSearch) return availableContacts;
+    const q = contactSearch.toLowerCase();
+    return availableContacts.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.email.toLowerCase().includes(q)
+    );
+  }, [contactSearch, availableContacts]);
+
+  // ── Close dropdowns on outside click ────────────────────────────────
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        accountInputRef.current &&
+        !accountInputRef.current.parentElement?.contains(e.target as Node)
+      ) {
+        setAccountDropdownOpen(false);
+      }
+      if (
+        contactInputRef.current &&
+        !contactInputRef.current.parentElement?.contains(e.target as Node)
+      ) {
+        setContactDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // ── Submit ──────────────────────────────────────────────────────────
+  const saveAndNewRef = React.useRef(false);
+
+  const resetForm = () => {
+    setContactName("");
+    setAccountId("");
+    setAccountSearch("");
+    setWebEmail("");
+    setStatus("New");
+    setCaseOrigin("");
+    setCaseType("");
+    setPriority("Medium");
+    setCaseReason("");
+    setSubject("");
+    setDescription("");
+    setOwner(OWNER_OPTIONS[0] ?? "");
+    setCaseDocumentation("");
+  };
+
+  const buildCase = (): CaseItem => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-AU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    return {
+      id: `case-${String(caseCount + 1).padStart(3, "0")}`,
+      caseNumber: `CS-2026-${String(caseCount + 1847).padStart(6, "0")}`,
+      accountId: accountId || "acc-001",
+      accountName: selectedAccount?.name ?? "Unknown Account",
+      type: (caseType || "Enquiry") as CaseType,
+      subType: caseReason || "General Enquiry",
+      status,
+      priority,
+      slaStatus: "On Track",
+      slaDeadline: "",
+      slaTimeRemaining: "4d 0h",
+      owner,
+      team: "Large Market Support",
+      createdDate: dateStr,
+      updatedDate: dateStr,
+      description,
+      resolution: "",
+      communications: [],
+      activities: [],
+      attachments: [],
+      relatedCases: [],
+    };
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onCreate(buildCase());
+    if (saveAndNewRef.current) {
+      resetForm();
+      saveAndNewRef.current = false;
+    } else {
+      onClose();
+    }
+  };
+
+  // ── Styling helpers ─────────────────────────────────────────────────
+  const formInput =
+    "h-10 w-full rounded-density-md border border-border bg-white px-3 outline-none placeholder:text-muted-foreground focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100";
+  const formLabel = "text-sm font-medium text-gray-900 dark:text-gray-100";
+  const sectionHeading =
+    "col-span-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400";
+  const sectionHeadingWithDivider =
+    "col-span-2 pt-4 mt-1 border-t border-border text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:border-gray-700 dark:text-gray-400";
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="new-case-modal-title"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="max-h-[90vh] w-full max-w-[720px] overflow-y-auto rounded-xl border border-border bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-5 dark:border-gray-700">
+          <h2
+            id="new-case-modal-title"
+            className="text-lg font-bold text-gray-900 dark:text-gray-100"
+          >
+            New Case
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label="Close"
+          >
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+
+        {/* ── Form ───────────────────────────────────────────────── */}
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5 px-6 py-6">
+            {/* ── Case Information ──────────────────────────────── */}
+            <div className={sectionHeading}>Case Information</div>
+
+            {/* Owner */}
+            <div className="space-y-1.5">
+              <label className={formLabel}>Case Owner</label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={owner}
+                  onChange={(e) => setOwner(e.target.value)}
+                >
+                  {OWNER_OPTIONS.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Placeholder for grid alignment */}
+            <div />
+
+            {/* Contact Name (search) */}
+            <div className="relative space-y-1.5">
+              <label className={formLabel}>Contact Name</label>
+              <div className="relative">
+                <input
+                  ref={contactInputRef}
+                  type="text"
+                  className={formInput}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={contactName || contactSearch}
+                  onChange={(e) => {
+                    setContactName("");
+                    setContactSearch(e.target.value);
+                    setContactDropdownOpen(true);
+                  }}
+                  onFocus={() => setContactDropdownOpen(true)}
+                  placeholder="Search Contacts..."
+                />
+                <Icon
+                  name="search"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+              {contactDropdownOpen && (
+                <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                  {filteredContacts.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      {accountId
+                        ? "No contacts found"
+                        : "Select an account first"}
+                    </div>
+                  ) : (
+                    filteredContacts.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                        onClick={() => {
+                          setContactName(c.name);
+                          setContactSearch("");
+                          setWebEmail(c.email);
+                          setContactDropdownOpen(false);
+                        }}
+                      >
+                        <Icon name="person" size={14} className="text-muted-foreground" />
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
+                            {c.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {c.email}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Account Name (search) */}
+            <div className="relative space-y-1.5">
+              <label className={formLabel}>
+                Account Name <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  ref={accountInputRef}
+                  type="text"
+                  className={formInput}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={
+                    selectedAccount ? selectedAccount.name : accountSearch
+                  }
+                  onChange={(e) => {
+                    setAccountId("");
+                    setAccountSearch(e.target.value);
+                    setAccountDropdownOpen(true);
+                  }}
+                  onFocus={() => {
+                    if (selectedAccount) {
+                      setAccountSearch(selectedAccount.name);
+                      setAccountId("");
+                    }
+                    setAccountDropdownOpen(true);
+                  }}
+                  placeholder="Search Accounts..."
+                  required
+                />
+                <Icon
+                  name="search"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+              {accountDropdownOpen && (
+                <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                  {filteredAccounts.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">
+                      No accounts found
+                    </div>
+                  ) : (
+                    filteredAccounts.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                        onClick={() => {
+                          setAccountId(a.id);
+                          setAccountSearch("");
+                          setContactName("");
+                          setContactSearch("");
+                          setAccountDropdownOpen(false);
+                        }}
+                      >
+                        <Icon
+                          name="domain"
+                          size={14}
+                          className="text-muted-foreground"
+                        />
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
+                            {a.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {a.accountNumber}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Web Email */}
+            <div className="col-span-2 space-y-1.5 sm:col-span-1">
+              <label className={formLabel}>Web Email</label>
+              <input
+                type="email"
+                className={formInput}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={webEmail}
+                onChange={(e) => setWebEmail(e.target.value)}
+                placeholder="email@example.com"
+              />
+            </div>
+            <div className="hidden sm:block" />
+
+            {/* ── Additional Information ────────────────────────── */}
+            <div className={sectionHeadingWithDivider}>Additional Information</div>
+
+            {/* Status */}
+            <div className="space-y-1.5">
+              <label className={formLabel}>
+                Status <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as CaseStatus)}
+                >
+                  {CASE_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Case Documentation */}
+            <div className="space-y-1.5">
+              <label className={formLabel}>Case Documentation</label>
+              <input
+                type="text"
+                className={formInput}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={caseDocumentation}
+                onChange={(e) => setCaseDocumentation(e.target.value)}
+                placeholder=""
+              />
+            </div>
+
+            {/* Case Origin */}
+            <div className="space-y-1.5">
+              <label className={formLabel}>
+                Case Origin <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={caseOrigin}
+                  onChange={(e) => setCaseOrigin(e.target.value)}
+                  required
+                >
+                  <option value="">--None--</option>
+                  {CASE_ORIGINS.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Type */}
+            <div className="space-y-1.5">
+              <label className={formLabel}>Type</label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={caseType}
+                  onChange={(e) => setCaseType(e.target.value as CaseType | "")}
+                >
+                  <option value="">--None--</option>
+                  {CASE_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Priority */}
+            <div className="space-y-1.5">
+              <label className={formLabel}>Priority</label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as CasePriority)}
+                >
+                  {CASE_PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Case Reason */}
+            <div className="space-y-1.5">
+              <label className={formLabel}>Case Reason</label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={caseReason}
+                  onChange={(e) => setCaseReason(e.target.value)}
+                >
+                  <option value="">--None--</option>
+                  {CASE_REASONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* ── Description Information ───────────────────────── */}
+            <div className={sectionHeadingWithDivider}>Description Information</div>
+
+            {/* Subject */}
+            <div className="col-span-2 space-y-1.5">
+              <label className={formLabel}>Subject</label>
+              <input
+                type="text"
+                className={formInput}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Brief summary of the case"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="col-span-2 space-y-1.5">
+              <label className={formLabel}>Description</label>
+              <textarea
+                className={cn(formInput, "h-24 resize-none py-2")}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Detailed description of the case..."
+              />
+            </div>
+          </div>
+
+          {/* ── Footer ─────────────────────────────────────────────── */}
+          <div className="flex justify-end gap-3 border-t border-border px-6 py-4 dark:border-gray-700">
+            <Button variant="outline" size="md" type="button" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              type="submit"
+              onClick={() => {
+                saveAndNewRef.current = true;
+              }}
+            >
+              Save &amp; New
+            </Button>
+            <Button
+              size="md"
+              type="submit"
+              onClick={() => {
+                saveAndNewRef.current = false;
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

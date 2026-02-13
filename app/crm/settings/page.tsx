@@ -155,9 +155,9 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-density-lg lg:grid-cols-[240px_1fr]">
+        <div className="grid min-w-0 grid-cols-[minmax(160px,240px)_1fr] gap-density-lg">
           {/* Settings nav */}
-          <Card className="h-fit shadow-none">
+          <Card className="h-fit min-w-0 shrink-0 shadow-none">
             <div className="p-density-sm">
               {SETTINGS_TABS.map((tab) => {
                 const isActive = activeTab === tab.key;
@@ -183,7 +183,7 @@ export default function SettingsPage() {
           </Card>
 
           {/* Content area */}
-          <div className="flex flex-col gap-density-lg">
+          <div className="flex min-w-0 flex-col gap-density-lg">
             {/* Users */}
             {activeTab === "users" && (
               <Card className="shadow-none">

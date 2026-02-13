@@ -115,9 +115,9 @@ export default function ContractsPage() {
         </div>
 
         {/* KPI Cards */}
-        <div className="mb-density-xl grid grid-cols-1 gap-density-lg sm:grid-cols-2 xl:grid-cols-4">
-          <Link href="/crm/contracts" className="block no-underline">
-            <Card className="shadow-none transition-colors hover:border-[#2C365D] dark:hover:border-[#7c8cb8]">
+        <div className="mb-density-xl grid grid-cols-4 gap-density-lg">
+          <Link href="/crm/contracts" className="block min-w-0 no-underline">
+            <Card className="h-full shadow-none transition-colors hover:border-[#2C365D] dark:hover:border-[#7c8cb8]">
               <CardContent className="p-density-xl pt-density-xl">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -145,8 +145,8 @@ export default function ContractsPage() {
               </CardContent>
             </Card>
           </Link>
-          <Link href="/crm/contracts" className="block no-underline">
-            <Card className="shadow-none transition-colors hover:border-[#2C365D] dark:hover:border-[#7c8cb8]">
+          <Link href="/crm/contracts" className="block min-w-0 no-underline">
+            <Card className="h-full shadow-none transition-colors hover:border-[#2C365D] dark:hover:border-[#7c8cb8]">
               <CardContent className="p-density-xl pt-density-xl">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -174,8 +174,8 @@ export default function ContractsPage() {
               </CardContent>
             </Card>
           </Link>
-          <Link href="/crm/contracts" className="block no-underline">
-            <Card className="shadow-none transition-colors hover:border-[#2C365D] dark:hover:border-[#7c8cb8]">
+          <Link href="/crm/contracts" className="block min-w-0 no-underline">
+            <Card className="h-full shadow-none transition-colors hover:border-[#2C365D] dark:hover:border-[#7c8cb8]">
               <CardContent className="p-density-xl pt-density-xl">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -203,8 +203,8 @@ export default function ContractsPage() {
               </CardContent>
             </Card>
           </Link>
-          <Link href="/crm/contracts" className="block no-underline">
-            <Card className="shadow-none transition-colors hover:border-[#2C365D] dark:hover:border-[#7c8cb8]">
+          <Link href="/crm/contracts" className="block min-w-0 no-underline">
+            <Card className="h-full shadow-none transition-colors hover:border-[#2C365D] dark:hover:border-[#7c8cb8]">
               <CardContent className="p-density-xl pt-density-xl">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
