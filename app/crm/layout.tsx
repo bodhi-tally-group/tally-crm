@@ -14,24 +14,9 @@ import { cn } from "@/lib/utils";
 /* ─── Nav items ─────────────────────────────────────────────────────────── */
 
 const navItems: NavigationItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: "dashboard", href: "/crm/dashboard" },
-  { id: "opportunities", label: "Opportunities", icon: "work_outline", href: "/crm/opportunities" },
+  // Hidden for now: Dashboard, Opportunities, Communications, Performance & SLA, Contracts, Multi Demo
   { id: "cases", label: "Cases", icon: "inbox", href: "/crm/cases" },
   { id: "pipeline", label: "Pipeline", icon: "trending_up", href: "/crm/pipeline" },
-  { id: "communications", label: "Communications", icon: "chat_bubble_outline", href: "/crm/communications" },
-  { id: "performance", label: "Performance & SLA", icon: "speed", href: "/crm/performance" },
-  { id: "contracts", label: "Contracts", icon: "description", href: "/crm/contracts" },
-  {
-    id: "multi-demo",
-    label: "Multi Demo",
-    icon: "layers",
-    children: [
-      { id: "demo-overview", label: "Overview", href: "#" },
-      { id: "demo-analytics", label: "Analytics", href: "#" },
-      { id: "demo-reports", label: "Reports", href: "#" },
-      { id: "demo-export", label: "Export", href: "#" },
-    ],
-  },
 ];
 
 const bottomNavItems: NavigationItem[] = [
@@ -110,17 +95,9 @@ export default function CRMLayout({
     ? "pipeline"
     : pathname.startsWith("/crm/cases")
       ? "cases"
-      : pathname.startsWith("/crm/opportunities")
-        ? "opportunities"
-        : pathname.startsWith("/crm/communications")
-          ? "communications"
-          : pathname.startsWith("/crm/performance")
-            ? "performance"
-            : pathname.startsWith("/crm/contracts")
-              ? "contracts"
-              : pathname.startsWith("/crm/settings")
-                ? "settings"
-                : "dashboard";
+      : pathname.startsWith("/crm/settings")
+        ? "settings"
+        : "cases";
 
   return (
     <div className="flex h-screen min-w-0 flex-col overflow-hidden bg-[#F9F9FB] dark:bg-gray-900">
