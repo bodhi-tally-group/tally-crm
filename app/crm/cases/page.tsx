@@ -26,6 +26,9 @@ import SLAIndicator from "@/components/crm/SLAIndicator";
 import CaseListSidebar from "@/components/crm/CaseListSidebar";
 import AccountContextPanel from "@/components/crm/AccountContextPanel";
 import CaseDetailContent from "@/components/crm/CaseDetailContent";
+import LinkCaseModal from "@/components/crm/LinkCaseModal";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/Tooltip/Tooltip";
+import { useCaseLinksOverrides } from "@/lib/case-links-overrides";
 import type { CaseItem, CasePriority, CaseStatus, CaseType } from "@/types/crm";
 const CASE_PRIORITIES: CasePriority[] = ["Critical", "High", "Medium", "Low"];
 const CASE_ORIGINS = ["Phone", "Email", "Web", "Chat", "Social Media"] as const;
@@ -128,6 +131,12 @@ export default function CaseListPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortField, setSortField] = React.useState<SortField>("createdDate");
   const [sortDir, setSortDir] = React.useState<SortDirection>("desc");
+  const [linkModalOpen, setLinkModalOpen] = React.useState(false);
+  type PendingReason = "Customer" | "3rd Party" | "On Hold";
+  const [pendingFiltersSelected, setPendingFiltersSelected] = React.useState<
+    Set<PendingReason>
+  >(new Set());
+  const { getRelatedCases, addLink } = useCaseLinksOverrides();
 
   // Convert vertical mouse-wheel into horizontal scroll for kanban board
   React.useEffect(() => {
@@ -234,6 +243,24 @@ export default function CaseListPage() {
     return result;
   }, [cases, listView, accountFilter, searchQuery, sortField, sortDir]);
 
+  const pendingCounts = React.useMemo(() => {
+    const allPending = filtered.filter((c) => c.status === "Pending");
+    return {
+      Customer: allPending.filter((c) => c.pendingReason === "Customer").length,
+      "3rd Party": allPending.filter((c) => c.pendingReason === "3rd Party").length,
+      "On Hold": allPending.filter((c) => c.pendingReason === "On Hold").length,
+    };
+  }, [filtered]);
+
+  const togglePendingFilter = React.useCallback((reason: PendingReason) => {
+    setPendingFiltersSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(reason)) next.delete(reason);
+      else next.add(reason);
+      return next;
+    });
+  }, []);
+
   // In Tab view, keep selection in sync with filtered list (e.g. when filters change)
   React.useEffect(() => {
     if (viewMode !== "tab" || !tabViewSelectedCaseId) return;
@@ -246,10 +273,16 @@ export default function CaseListPage() {
   const kanbanByStatus = React.useMemo(() => {
     const byStatus: Record<string, CaseItem[]> = {};
     for (const status of CASE_STATUSES) {
-      byStatus[status] = filtered.filter((c) => c.status === status);
+      let casesForStatus = filtered.filter((c) => c.status === status);
+      if (status === "Pending" && pendingFiltersSelected.size > 0) {
+        casesForStatus = casesForStatus.filter(
+          (c) => c.pendingReason && pendingFiltersSelected.has(c.pendingReason)
+        );
+      }
+      byStatus[status] = casesForStatus;
     }
     return byStatus;
-  }, [filtered]);
+  }, [filtered, pendingFiltersSelected]);
 
   const renderSortHeader = (field: SortField, label: string, className?: string) => (
     <TableHead key={field} className={className}>
@@ -438,12 +471,32 @@ export default function CaseListPage() {
                     </div>
                   );
                 }
+                const relatedCaseNumbers = getRelatedCases(caseItem.id);
                 return (
                   <>
-                    <AccountContextPanel account={account} />
+                    <AccountContextPanel
+                      account={account}
+                      linkedCaseNumbers={relatedCaseNumbers}
+                      currentCaseId={caseItem.id}
+                      onOpenLinkModal={() => setLinkModalOpen(true)}
+                    />
                     <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto">
-                      <CaseDetailContent caseItem={caseItem} account={account} showBreadcrumbs={false} />
+                      <CaseDetailContent
+                        caseItem={caseItem}
+                        account={account}
+                        showBreadcrumbs={false}
+                        relatedCaseNumbers={relatedCaseNumbers}
+                        onOpenLinkModal={() => setLinkModalOpen(true)}
+                      />
                     </div>
+                    <LinkCaseModal
+                      open={linkModalOpen}
+                      onOpenChange={setLinkModalOpen}
+                      currentCaseId={caseItem.id}
+                      account={account}
+                      existingRelatedCaseNumbers={relatedCaseNumbers}
+                      onSelectCase={(caseNumber) => addLink(caseItem.id, caseNumber)}
+                    />
                   </>
                 );
               })() : (
@@ -474,6 +527,13 @@ export default function CaseListPage() {
                   status={status}
                   cases={statusCases}
                   onDrop={handleDrop}
+                  pendingFiltersSelected={
+                    status === "Pending" ? pendingFiltersSelected : undefined
+                  }
+                  onPendingFilterToggle={
+                    status === "Pending" ? togglePendingFilter : undefined
+                  }
+                  pendingCounts={status === "Pending" ? pendingCounts : undefined}
                 />
               );
             })}
@@ -584,14 +644,29 @@ export default function CaseListPage() {
 
 /* ─── Kanban Column ────────────────────────────────────────────────────── */
 
+const PENDING_FILTER_CONFIG: {
+  reason: "Customer" | "3rd Party" | "On Hold";
+  icon: string;
+}[] = [
+  { reason: "Customer", icon: "person" },
+  { reason: "3rd Party", icon: "group" },
+  { reason: "On Hold", icon: "pause" },
+];
+
 function CaseKanbanColumn({
   status,
   cases: columnCases,
   onDrop,
+  pendingFiltersSelected,
+  onPendingFilterToggle,
+  pendingCounts,
 }: {
   status: CaseStatus;
   cases: CaseItem[];
   onDrop: (caseId: string, newStatus: CaseStatus) => void;
+  pendingFiltersSelected?: Set<"Customer" | "3rd Party" | "On Hold">;
+  onPendingFilterToggle?: (reason: "Customer" | "3rd Party" | "On Hold") => void;
+  pendingCounts?: { Customer: number; "3rd Party": number; "On Hold": number };
 }) {
   const [isDragOver, setIsDragOver] = React.useState(false);
 
@@ -619,9 +694,9 @@ function CaseKanbanColumn({
       onDrop={handleDrop}
     >
       {/* Column header */}
-      <div className="flex items-center justify-between rounded-t-lg border-b border-border bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
-        <div className="flex items-center gap-2">
-          <span className={cn("h-2.5 w-2.5 rounded-full", statusColors[status])} />
+      <div className="flex items-center justify-between gap-2 rounded-t-lg border-b border-border bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", statusColors[status])} />
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {status}
           </span>
@@ -629,6 +704,45 @@ function CaseKanbanColumn({
             {columnCases.length}
           </span>
         </div>
+        {status === "Pending" && onPendingFilterToggle && pendingCounts && (
+          <div className="flex shrink-0 items-center gap-1">
+            {PENDING_FILTER_CONFIG.map(({ reason, icon }) => {
+              const selected = pendingFiltersSelected?.has(reason) ?? false;
+              const count = pendingCounts[reason];
+              return (
+                <div key={reason} className="relative">
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => onPendingFilterToggle(reason)}
+                        className={cn(
+                          "flex items-center gap-0.5 rounded p-1 transition-colors",
+                          selected
+                            ? "text-[#C53B00] hover:text-[#C53B00]/90 dark:text-[#C53B00] dark:hover:text-[#e85c1a]"
+                            : "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400"
+                        )}
+                      >
+                        <Icon name={icon} size={16} />
+                        <span className="text-[10px] font-medium tabular-nums">{count}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="bottom"
+                      className="!border-0 !bg-white !px-4 !py-2.5 !text-sm !font-normal !text-gray-900 !shadow-md dark:!bg-gray-800 dark:!text-gray-100"
+                      style={{
+                        boxShadow:
+                          "0 2px 2px -1px rgba(10,13,18,0.04), 0 4px 6px -2px rgba(10,13,18,0.03), 0 12px 16px -4px rgba(10,13,18,0.08)",
+                      }}
+                    >
+                      <span className="whitespace-nowrap">{reason}</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Cards */}

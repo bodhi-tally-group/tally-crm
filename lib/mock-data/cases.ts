@@ -120,7 +120,7 @@ export const mockCases: CaseItem[] = [
         uploadedDate: "07/02/2026",
       },
     ],
-    relatedCases: ["CS-2025-009234"],
+    relatedCases: ["CS-2026-001745", "CS-2026-001882"],
   },
   {
     id: "case-002",
@@ -188,7 +188,8 @@ export const mockCases: CaseItem[] = [
         uploadedDate: "03/02/2026",
       },
     ],
-    relatedCases: [],
+    relatedCases: ["CS-2026-001750", "CS-2026-001860"],
+    pendingReason: "3rd Party",
   },
   {
     id: "case-003",
@@ -232,7 +233,7 @@ export const mockCases: CaseItem[] = [
       },
     ],
     attachments: [],
-    relatedCases: [],
+    relatedCases: ["CS-2026-001870", "CS-2026-001900"],
   },
   {
     id: "case-004",
@@ -308,7 +309,7 @@ export const mockCases: CaseItem[] = [
       },
     ],
     attachments: [],
-    relatedCases: ["CS-2026-001810"],
+    relatedCases: ["CS-2026-001890", "CS-2026-001910"],
   },
   {
     id: "case-005",
@@ -417,7 +418,7 @@ export const mockCases: CaseItem[] = [
       },
     ],
     attachments: [],
-    relatedCases: [],
+    relatedCases: ["CS-2026-001750", "CS-2026-001832"],
   },
   {
     id: "case-007",
@@ -458,7 +459,7 @@ export const mockCases: CaseItem[] = [
       },
     ],
     attachments: [],
-    relatedCases: [],
+    relatedCases: ["CS-2026-001847", "CS-2026-001882"],
   },
   {
     id: "case-008",
@@ -663,7 +664,8 @@ export const mockCases: CaseItem[] = [
         uploadedDate: "06/02/2026",
       },
     ],
-    relatedCases: ["CS-2026-001720"],
+    relatedCases: ["CS-2026-001720", "CS-2026-001780"],
+    pendingReason: "On Hold",
   },
   {
     id: "case-012",
@@ -704,7 +706,7 @@ export const mockCases: CaseItem[] = [
       },
     ],
     attachments: [],
-    relatedCases: [],
+    relatedCases: ["CS-2026-001832", "CS-2026-001860"],
   },
   {
     id: "case-013",
@@ -908,6 +910,10 @@ export const mockCases: CaseItem[] = [
 
 export function getCaseById(id: string): CaseItem | undefined {
   return mockCases.find((c) => c.id === id);
+}
+
+export function getCaseByCaseNumber(caseNumber: string): CaseItem | undefined {
+  return mockCases.find((c) => c.caseNumber === caseNumber);
 }
 
 export function getCasesBySLA(status: string): CaseItem[] {

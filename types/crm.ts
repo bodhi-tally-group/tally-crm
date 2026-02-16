@@ -101,6 +101,8 @@ export interface CaseItem {
   activities: Activity[];
   attachments: Attachment[];
   relatedCases: string[];
+  /** When status is Pending, reason for pending (used for Kanban filter) */
+  pendingReason?: "Customer" | "3rd Party" | "On Hold";
 }
 
 // ── Communication ───────────────────────────────────────────────────────────

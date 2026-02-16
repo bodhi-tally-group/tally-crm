@@ -1,13 +1,23 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/ui/icon";
 import Badge from "@/components/Badge/Badge";
+import SLAIndicator from "@/components/crm/SLAIndicator";
+import { getCaseByCaseNumber } from "@/lib/mock-data/cases";
+import { getAccountById } from "@/lib/mock-data/accounts";
 import type { Account } from "@/types/crm";
 
 interface AccountContextPanelProps {
   account: Account;
+  /** Case numbers of manually linked cases to show in Linked Cases section */
+  linkedCaseNumbers?: string[];
+  /** When set, show "Link case" button and allow adding links */
+  currentCaseId?: string;
+  /** Callback to open the link-case modal */
+  onOpenLinkModal?: () => void;
   className?: string;
 }
 
@@ -41,6 +51,9 @@ function DataRow({
 
 export default function AccountContextPanel({
   account,
+  linkedCaseNumbers = [],
+  currentCaseId,
+  onOpenLinkModal,
   className,
 }: AccountContextPanelProps) {
   const accountTypeVariant =
@@ -78,8 +91,8 @@ export default function AccountContextPanel({
         </div>
       </div>
 
-      {/* Content — no internal scroll; compact so it fits */}
-      <div className="flex-1 overflow-hidden px-3 py-2">
+      {/* Content — scrollable when taller than panel */}
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
         <div className="space-y-2.5">
           {/* Account type and status */}
           <div className="flex flex-wrap items-center gap-1.5">
@@ -181,6 +194,68 @@ export default function AccountContextPanel({
               </div>
             </div>
           </div>
+
+          {/* Linked Cases — only show cases from the same org; optional "Link case" button */}
+          {(linkedCaseNumbers.length > 0 || onOpenLinkModal) && (
+            <>
+              <div className="border-t border-border dark:border-gray-800" />
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Linked Cases
+                  </span>
+                  {onOpenLinkModal && (
+                    <button
+                      type="button"
+                      onClick={onOpenLinkModal}
+                      className="text-[10px] font-medium text-[#2C365D] hover:underline dark:text-[#7c8cb8]"
+                    >
+                      + Link case
+                    </button>
+                  )}
+                </div>
+                {(() => {
+                  const linkedCasesSameOrg = linkedCaseNumbers
+                    .map((caseNum) => getCaseByCaseNumber(caseNum))
+                    .filter((c): c is NonNullable<typeof c> => c != null)
+                    .filter((linkedCase) => getAccountById(linkedCase.accountId)?.orgId === account.orgId);
+                  if (linkedCasesSameOrg.length === 0 && !onOpenLinkModal) return null;
+                  if (linkedCasesSameOrg.length === 0) {
+                    return (
+                      <p className="text-[11px] text-muted-foreground">
+                        No linked cases. Use &quot;Link case&quot; to add one.
+                      </p>
+                    );
+                  }
+                  return (
+                    <ul className="space-y-2">
+                      {linkedCasesSameOrg.map((linkedCase) => (
+                        <li key={linkedCase.id}>
+                          <Link
+                            href={`/crm/cases/${linkedCase.id}`}
+                            className="block w-full rounded-lg border border-border bg-gray-50/80 px-2.5 py-2 text-left transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/40 dark:hover:bg-gray-800/60"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {linkedCase.caseNumber}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 truncate text-xs text-muted-foreground" title={linkedCase.accountName}>
+                              {linkedCase.accountName}
+                            </p>
+                            <div className="mt-1.5 flex items-center justify-between gap-2">
+                              <span className="truncate text-[11px] text-muted-foreground">{linkedCase.status}</span>
+                              <SLAIndicator status={linkedCase.slaStatus} size="sm" showIcon={false} className="shrink-0 text-[11px]" />
+                            </div>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                })()}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </aside>

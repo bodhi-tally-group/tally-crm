@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { CaseLinksOverridesProvider } from "@/lib/case-links-overrides";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/ui/icon";
@@ -295,7 +296,9 @@ export default function CRMLayout({
         />
 
         {/* ── Main content ─────────────────────────────────────────── */}
-        <main className="flex min-h-0 min-w-0 flex-1">{children}</main>
+        <main className="flex min-h-0 min-w-0 flex-1">
+          <CaseLinksOverridesProvider>{children}</CaseLinksOverridesProvider>
+        </main>
       </div>
     </div>
   );

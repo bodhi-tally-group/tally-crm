@@ -77,14 +77,15 @@ const TooltipContent = React.forwardRef<
     left: "right-full top-1/2 -translate-y-1/2 mr-2",
   };
 
+  const hasCustomStyle = typeof className === "string" && (className.includes("bg-") || className.includes("text-"));
+  const baseClasses = hasCustomStyle
+    ? "absolute z-50 rounded-md px-3 py-1.5 text-sm shadow-md animate-in fade-in-0 zoom-in-95"
+    : "absolute z-50 rounded-md border border-border bg-[#2C365D] px-3 py-1.5 text-sm text-white shadow-md animate-in fade-in-0 zoom-in-95";
+
   return (
     <div
       ref={contentRef}
-      className={cn(
-        "absolute z-50 rounded-md border border-border bg-[#2C365D] px-3 py-1.5 text-sm text-white shadow-md animate-in fade-in-0 zoom-in-95",
-        sideClasses[side],
-        className
-      )}
+      className={cn(baseClasses, sideClasses[side], className)}
       {...props}
     >
       {children}

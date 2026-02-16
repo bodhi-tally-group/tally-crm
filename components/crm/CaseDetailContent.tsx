@@ -12,6 +12,8 @@ import StatusProgressBar from "@/components/crm/StatusProgressBar";
 import CommunicationTimeline from "@/components/crm/CommunicationTimeline";
 import ActivityTimeline from "@/components/crm/ActivityTimeline";
 import DocumentAttachments from "@/components/crm/DocumentAttachments";
+import { getCaseByCaseNumber } from "@/lib/mock-data/cases";
+import { getAccountById } from "@/lib/mock-data/accounts";
 import type { Account, CaseItem, CasePriority, Contact } from "@/types/crm";
 
 const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline"> = {
@@ -46,13 +48,20 @@ interface CaseDetailContentProps {
   caseItem: CaseItem;
   account: Account;
   showBreadcrumbs?: boolean;
+  /** When set, used for Related tab and allows linking (from overrides store) */
+  relatedCaseNumbers?: string[];
+  /** Callback to open the link-case modal */
+  onOpenLinkModal?: () => void;
 }
 
 export default function CaseDetailContent({
   caseItem,
   account,
   showBreadcrumbs = true,
+  relatedCaseNumbers: relatedCaseNumbersProp,
+  onOpenLinkModal,
 }: CaseDetailContentProps) {
+  const relatedCaseNumbers = relatedCaseNumbersProp ?? caseItem.relatedCases;
   const [activeTab, setActiveTab] = React.useState("request");
 
   return (
@@ -301,28 +310,56 @@ export default function CaseDetailContent({
               </div>
             </div>
             <div className="rounded-lg border border-border bg-white p-4 lg:col-span-2 dark:border-gray-700 dark:bg-gray-900">
-              <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-                Related Cases ({caseItem.relatedCases.length})
-              </h3>
-              {caseItem.relatedCases.length > 0 ? (
-                <div className="space-y-2">
-                  {caseItem.relatedCases.map((rc) => (
-                    <div
-                      key={rc}
-                      className="flex items-center gap-2 rounded border border-border px-3 py-2 dark:border-gray-700"
-                    >
-                      <Icon name="link" size={16} className="text-gray-400" />
-                      <span className="text-sm font-medium text-[#2C365D] dark:text-[#7c8cb8]">
-                        {rc}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  No related cases.
-                </p>
-              )}
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Related Cases (
+                  {
+                    relatedCaseNumbers.filter((caseNum) => {
+                      const c = getCaseByCaseNumber(caseNum);
+                      return c && getAccountById(c.accountId)?.orgId === account.orgId;
+                    }).length
+                  }
+                  )
+                </h3>
+                {onOpenLinkModal && (
+                  <Button variant="outline" size="sm" className="gap-1" onClick={onOpenLinkModal}>
+                    <Icon name="link" size={14} />
+                    Link case
+                  </Button>
+                )}
+              </div>
+              {(() => {
+                const relatedSameOrg = relatedCaseNumbers.filter((caseNum) => {
+                  const c = getCaseByCaseNumber(caseNum);
+                  return c != null && getAccountById(c.accountId)?.orgId === account.orgId;
+                });
+                return relatedSameOrg.length > 0 ? (
+                  <div className="space-y-2">
+                    {relatedSameOrg.map((caseNum) => {
+                      const linkedCase = getCaseByCaseNumber(caseNum);
+                      if (!linkedCase) return null;
+                      return (
+                        <Link
+                          key={linkedCase.id}
+                          href={`/crm/cases/${linkedCase.id}`}
+                          className="flex items-center gap-2 rounded border border-border px-3 py-2 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/60"
+                        >
+                          <Icon name="link" size={16} className="text-gray-400" />
+                          <span className="text-sm font-medium text-[#2C365D] dark:text-[#7c8cb8]">
+                            {linkedCase.caseNumber}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    {onOpenLinkModal
+                      ? "No related cases. Use \"Link case\" to add one from the same organisation."
+                      : "No related cases in the same organisation."}
+                  </p>
+                );
+              })()}
             </div>
           </div>
         </TabsContent>
