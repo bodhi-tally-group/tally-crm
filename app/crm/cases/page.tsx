@@ -15,7 +15,7 @@ import Button from "@/components/Button/Button";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 import { mockCases } from "@/lib/mock-data/cases";
-import { mockAccounts } from "@/lib/mock-data/accounts";
+import { getAccountById, mockAccounts } from "@/lib/mock-data/accounts";
 import {
   CASE_TYPE_GROUPS,
   CASE_GROUP_TO_TYPE,
@@ -23,6 +23,9 @@ import {
   CASE_GROUP_TO_REASON,
 } from "@/lib/mock-data/case-types";
 import SLAIndicator from "@/components/crm/SLAIndicator";
+import CaseListSidebar from "@/components/crm/CaseListSidebar";
+import AccountContextPanel from "@/components/crm/AccountContextPanel";
+import CaseDetailContent from "@/components/crm/CaseDetailContent";
 import type { CaseItem, CasePriority, CaseStatus, CaseType } from "@/types/crm";
 const CASE_PRIORITIES: CasePriority[] = ["Critical", "High", "Medium", "Low"];
 const CASE_ORIGINS = ["Phone", "Email", "Web", "Chat", "Social Media"] as const;
@@ -45,7 +48,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-type ViewMode = "kanban" | "list";
+type ViewMode = "kanban" | "list" | "tab";
 
 const CASE_STATUSES: CaseStatus[] = [
   "New",
@@ -116,9 +119,8 @@ const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outl
 
 export default function CaseListPage() {
   const [viewMode, setViewMode] = React.useState<ViewMode>("list");
+  const [tabViewSelectedCaseId, setTabViewSelectedCaseId] = React.useState<string | null>(null);
   const [listView, setListView] = React.useState<ListViewId>("all");
-  const [listViewOpen, setListViewOpen] = React.useState(false);
-  const listViewRef = React.useRef<HTMLDivElement>(null);
   const kanbanRef = React.useRef<HTMLDivElement>(null);
   const [cases, setCases] = React.useState(mockCases);
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -126,18 +128,6 @@ export default function CaseListPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortField, setSortField] = React.useState<SortField>("createdDate");
   const [sortDir, setSortDir] = React.useState<SortDirection>("desc");
-
-  // Close dropdown when clicking outside
-  React.useEffect(() => {
-    if (!listViewOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      if (listViewRef.current && !listViewRef.current.contains(e.target as Node)) {
-        setListViewOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [listViewOpen]);
 
   // Convert vertical mouse-wheel into horizontal scroll for kanban board
   React.useEffect(() => {
@@ -244,6 +234,15 @@ export default function CaseListPage() {
     return result;
   }, [cases, listView, accountFilter, searchQuery, sortField, sortDir]);
 
+  // In Tab view, keep selection in sync with filtered list (e.g. when filters change)
+  React.useEffect(() => {
+    if (viewMode !== "tab" || !tabViewSelectedCaseId) return;
+    const isInFiltered = filtered.some((c) => c.id === tabViewSelectedCaseId);
+    if (!isInFiltered) {
+      setTabViewSelectedCaseId(filtered[0]?.id ?? null);
+    }
+  }, [viewMode, filtered, tabViewSelectedCaseId]);
+
   const kanbanByStatus = React.useMemo(() => {
     const byStatus: Record<string, CaseItem[]> = {};
     for (const status of CASE_STATUSES) {
@@ -271,10 +270,20 @@ export default function CaseListPage() {
   );
 
   return (
-    <div className="min-w-0 flex-1 overflow-y-auto">
-    <div className="mx-auto max-w-[1600px] p-density-xl">
+    <div
+      className={cn(
+        "min-w-0 flex-1 overflow-x-hidden",
+        viewMode === "tab" ? "flex min-h-0 flex-col overflow-hidden" : "overflow-y-auto"
+      )}
+    >
+    <div
+      className={cn(
+        "mx-auto w-full min-w-0 max-w-[1600px] p-density-xl",
+        viewMode === "tab" && "flex min-h-0 flex-1 flex-col"
+      )}
+    >
       {/* Page header */}
-      <div className="mb-density-xl flex items-center justify-between">
+      <div className={cn("mb-density-xl flex items-center justify-between", viewMode === "tab" && "shrink-0")}>
         <div>
           <h1
             className="font-bold text-gray-900 dark:text-gray-100"
@@ -296,107 +305,82 @@ export default function CaseListPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-density-lg flex flex-wrap items-center gap-density-md">
-        {/* List view dropdown */}
-        <div ref={listViewRef} className="relative">
+      <div className={cn("mb-density-lg flex flex-wrap items-center gap-density-md", viewMode === "tab" && "shrink-0")}>
+        {/* Left: list view, account filter, search (search grows) */}
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-density-md">
+          <div className="relative min-w-[140px]">
+            <select
+              value={listView}
+              onChange={(e) => setListView(e.target.value as ListViewId)}
+              className="w-full cursor-pointer appearance-none rounded-density-md border border-border bg-white py-2 pl-3 pr-9 font-medium transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-gray-100"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
+              {LIST_VIEWS.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.label}
+                </option>
+              ))}
+            </select>
+            <Icon
+              name="expand_more"
+              size={16}
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+          </div>
+
+          <div className="relative max-w-[180px]">
+            <select
+              value={accountFilter}
+              onChange={(e) => setAccountFilter(e.target.value)}
+              className="w-full cursor-pointer truncate appearance-none rounded-density-md border border-border bg-white py-2 pl-3 pr-9 font-medium transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-gray-100"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
+              <option value="">All Accounts</option>
+              {accountNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <Icon
+              name="expand_more"
+              size={16}
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+          </div>
+
+          <div className="relative min-w-[120px] flex-1">
+            <Icon
+              name="search"
+              size="var(--tally-icon-size-md)"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search cases..."
+              className="w-full rounded-density-md border border-border bg-white py-2 pl-9 pr-3 outline-none placeholder:text-muted-foreground focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            />
+          </div>
+        </div>
+
+        {/* Right: List / Kanban / Tab view toggle — aligned to container edge */}
+        <div className="inline-flex shrink-0 rounded-density-md border border-border bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900">
           <button
             type="button"
-            onClick={() => setListViewOpen((o) => !o)}
+            onClick={() => setViewMode("list")}
             className={cn(
-              "flex items-center gap-2 rounded-density-md border border-border bg-white py-2 pl-3 pr-9 font-medium transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800"
+              "flex items-center rounded px-2.5 py-1 font-medium transition-colors",
+              viewMode === "list"
+                ? "bg-[#2C365D] text-white"
+                : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
             )}
-            style={{ fontSize: "var(--tally-font-size-sm)" }}
+            style={{ fontSize: "var(--tally-font-size-xs)" }}
           >
-            {LIST_VIEWS.find((v) => v.id === listView)?.label ?? "All Cases"}
-            <span className="text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
-              ({filtered.length})
-            </span>
+            <Icon name="list" size="var(--tally-icon-size-sm)" className="mr-1" />
+            List
           </button>
-          <Icon
-            name="expand_more"
-            size={16}
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-
-          {/* Dropdown menu */}
-          {listViewOpen && (
-            <div className="absolute left-0 top-full z-50 mt-1 min-w-[240px] rounded-lg border border-border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-900">
-              <div
-                className="px-3 py-1.5 font-bold uppercase tracking-wider text-muted-foreground"
-                style={{ fontSize: "var(--tally-font-size-xs)" }}
-              >
-                List Views
-              </div>
-              {LIST_VIEWS.map((view) => (
-                <button
-                  key={view.id}
-                  type="button"
-                  onClick={() => {
-                    setListView(view.id);
-                    setListViewOpen(false);
-                  }}
-                  className={cn(
-                    "flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors",
-                    listView === view.id
-                      ? "text-gray-900 dark:text-gray-100"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-                  )}
-                >
-                  {listView === view.id ? (
-                    <Icon name="check" size={16} className="shrink-0 text-[#008000] dark:text-green-400" />
-                  ) : (
-                    <span className="w-4 shrink-0" />
-                  )}
-                  <span>{view.label}</span>
-                  {view.pinned && (
-                    <span className="ml-auto text-xs text-muted-foreground">(Pinned list)</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Account filter dropdown */}
-        <div className="relative max-w-[180px]">
-          <select
-            value={accountFilter}
-            onChange={(e) => setAccountFilter(e.target.value)}
-            className="w-full cursor-pointer truncate appearance-none rounded-density-md border border-border bg-white py-2 pl-3 pr-9 font-medium transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800 dark:text-gray-100"
-            style={{ fontSize: "var(--tally-font-size-sm)" }}
-          >
-            <option value="">All Accounts</option>
-            {accountNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <Icon
-            name="expand_more"
-            size={16}
-            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-        </div>
-
-        {/* Search */}
-        <div className="relative flex-1">
-          <Icon
-            name="search"
-            size="var(--tally-icon-size-md)"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search cases..."
-            className="w-full rounded-density-md border border-border bg-white py-2 pl-9 pr-3 outline-none placeholder:text-muted-foreground focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900"
-            style={{ fontSize: "var(--tally-font-size-sm)" }}
-          />
-        </div>
-
-        {/* View toggle */}
-        <div className="inline-flex rounded-density-md border border-border bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900">
           <button
             type="button"
             onClick={() => setViewMode("kanban")}
@@ -413,20 +397,64 @@ export default function CaseListPage() {
           </button>
           <button
             type="button"
-            onClick={() => setViewMode("list")}
+            onClick={() => {
+              setViewMode("tab");
+              if (filtered.length > 0 && !tabViewSelectedCaseId) {
+                setTabViewSelectedCaseId(filtered[0].id);
+              }
+            }}
             className={cn(
               "flex items-center rounded px-2.5 py-1 font-medium transition-colors",
-              viewMode === "list"
+              viewMode === "tab"
                 ? "bg-[#2C365D] text-white"
                 : "text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
             )}
             style={{ fontSize: "var(--tally-font-size-xs)" }}
           >
-            <Icon name="list" size="var(--tally-icon-size-sm)" className="mr-1" />
-            List
+            <Icon name="tab" size="var(--tally-icon-size-sm)" className="mr-1" />
+            Tab
           </button>
         </div>
       </div>
+
+      {/* Tab view (sidebar + case detail) — stays inside viewport; scroll only inside this box */}
+      {viewMode === "tab" && (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-white dark:border-gray-700 dark:bg-gray-900">
+          <div className="flex min-h-0 min-w-0 flex-1 overflow-auto" style={{ minWidth: 0 }}>
+            <div className="flex min-h-0 w-full min-w-0">
+              <CaseListSidebar
+                cases={filtered}
+                currentCaseId={tabViewSelectedCaseId ?? ""}
+                onSelectCase={(id) => setTabViewSelectedCaseId(id)}
+                compact
+              />
+              {tabViewSelectedCaseId ? (() => {
+                const caseItem = cases.find((c) => c.id === tabViewSelectedCaseId) ?? mockCases.find((c) => c.id === tabViewSelectedCaseId);
+                const account = caseItem ? getAccountById(caseItem.accountId) : null;
+                if (!caseItem || !account) {
+                  return (
+                    <div className="flex min-w-0 flex-1 items-center justify-center text-muted-foreground">
+                      Case or account not found.
+                    </div>
+                  );
+                }
+                return (
+                  <>
+                    <AccountContextPanel account={account} />
+                    <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto">
+                      <CaseDetailContent caseItem={caseItem} account={account} showBreadcrumbs={false} />
+                    </div>
+                  </>
+                );
+              })() : (
+                <div className="flex min-w-0 flex-1 items-center justify-center text-muted-foreground">
+                  Select a case from the list
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Kanban view */}
       {viewMode === "kanban" && (
