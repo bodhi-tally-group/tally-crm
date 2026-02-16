@@ -196,6 +196,8 @@ export const mockAccounts: Account[] = [
       email: "a.foster@brisbanecc.com.au",
       phone: "07 3308 3000",
       isPrimary: true,
+      createDate: "16/07/2025 7:49 AM AEST",
+      lifecycleStage: "Subscriber",
     },
     contacts: [
       {
@@ -205,6 +207,8 @@ export const mockAccounts: Account[] = [
         email: "a.foster@brisbanecc.com.au",
         phone: "07 3308 3000",
         isPrimary: true,
+        createDate: "16/07/2025 7:49 AM AEST",
+        lifecycleStage: "Subscriber",
       },
       {
         id: "con-007",
@@ -265,6 +269,10 @@ export const mockAccounts: Account[] = [
 
 export function getAccountById(id: string): Account | undefined {
   return mockAccounts.find((a) => a.id === id);
+}
+
+export function getOrgById(id: string): Org | undefined {
+  return mockOrgs.find((o) => o.id === id);
 }
 
 export function getAccountsByOrgId(orgId: string): Account[] {

@@ -75,6 +75,13 @@ export interface Contact {
   email: string;
   phone: string;
   isPrimary: boolean;
+  /** Optional fields for contact info page */
+  createDate?: string;
+  preferredChannels?: string;
+  favoriteContentTopics?: string;
+  leadStatus?: string;
+  lifecycleStage?: string;
+  lastActivityDate?: string;
 }
 
 // ── Case ────────────────────────────────────────────────────────────────────
