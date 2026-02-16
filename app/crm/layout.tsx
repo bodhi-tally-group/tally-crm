@@ -125,7 +125,7 @@ export default function CRMLayout({
       {/* ── App Bar ──────────────────────────────────────────────────── */}
       <header className="flex h-14 shrink-0 items-center border-b border-border bg-white px-4 dark:bg-gray-800">
         {/* Logo */}
-        <Link href="/crm/dashboard" className="mr-6 flex items-center">
+        <Link href="/crm/cases" className="mr-6 flex items-center">
           <Image
             src="/Tally_CRM_Logo.svg"
             alt="Tally CRM"

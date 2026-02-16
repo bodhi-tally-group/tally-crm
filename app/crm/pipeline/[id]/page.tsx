@@ -84,8 +84,8 @@ export default function OpportunityDetailPage() {
         <div className="mx-auto max-w-[1400px] p-density-xl">
           {/* Breadcrumbs */}
           <nav className="mb-density-md flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Link href="/crm/dashboard" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-              Dashboard
+            <Link href="/crm/cases" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+              Cases
             </Link>
             <Icon name="chevron_right" size={14} />
             <Link href="/crm/pipeline" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
