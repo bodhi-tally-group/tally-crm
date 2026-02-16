@@ -1,37 +1,47 @@
-import React from "react";
+"use client";
+
+import {
+  createContext,
+  useContext,
+  forwardRef,
+  type TableHTMLAttributes,
+  type HTMLAttributes,
+  type TdHTMLAttributes,
+  type ThHTMLAttributes,
+} from "react";
 import { cn } from "@/lib/utils";
 
-const TableContext = React.createContext<{ dense?: boolean }>({});
+const TableContext = createContext<{ dense?: boolean }>({});
 
 export interface TableProps
-  extends React.TableHTMLAttributes<HTMLTableElement> {
+  extends TableHTMLAttributes<HTMLTableElement> {
   disableWrapper?: boolean;
   /** When true, reduces row padding to match compact tables (e.g. Cases list) */
   dense?: boolean;
 }
 
 export interface TableHeaderProps
-  extends React.HTMLAttributes<HTMLTableSectionElement> {}
+  extends HTMLAttributes<HTMLTableSectionElement> {}
 
 export interface TableBodyProps
-  extends React.HTMLAttributes<HTMLTableSectionElement> {}
+  extends HTMLAttributes<HTMLTableSectionElement> {}
 
 export interface TableFooterProps
-  extends React.HTMLAttributes<HTMLTableSectionElement> {}
+  extends HTMLAttributes<HTMLTableSectionElement> {}
 
 export interface TableRowProps
-  extends React.HTMLAttributes<HTMLTableRowElement> {}
+  extends HTMLAttributes<HTMLTableRowElement> {}
 
 export interface TableHeadProps
-  extends React.ThHTMLAttributes<HTMLTableCellElement> {}
+  extends ThHTMLAttributes<HTMLTableCellElement> {}
 
 export interface TableCellProps
-  extends React.TdHTMLAttributes<HTMLTableCellElement> {}
+  extends TdHTMLAttributes<HTMLTableCellElement> {}
 
 export interface TableCaptionProps
-  extends React.HTMLAttributes<HTMLTableCaptionElement> {}
+  extends HTMLAttributes<HTMLTableCaptionElement> {}
 
-const Table = React.forwardRef<HTMLTableElement, TableProps>(
+const Table = forwardRef<HTMLTableElement, TableProps>(
   ({ className, disableWrapper, dense, ...props }, ref) => {
     const table = (
       <TableContext.Provider value={{ dense }}>
@@ -54,7 +64,7 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
 );
 Table.displayName = "Table";
 
-const TableHeader = React.forwardRef<
+const TableHeader = forwardRef<
   HTMLTableSectionElement,
   TableHeaderProps
 >(({ className, ...props }, ref) => {
@@ -68,7 +78,7 @@ const TableHeader = React.forwardRef<
 });
 TableHeader.displayName = "TableHeader";
 
-const TableBody = React.forwardRef<
+const TableBody = forwardRef<
   HTMLTableSectionElement,
   TableBodyProps
 >(({ className, ...props }, ref) => {
@@ -82,7 +92,7 @@ const TableBody = React.forwardRef<
 });
 TableBody.displayName = "TableBody";
 
-const TableFooter = React.forwardRef<
+const TableFooter = forwardRef<
   HTMLTableSectionElement,
   TableFooterProps
 >(({ className, ...props }, ref) => {
@@ -99,7 +109,7 @@ const TableFooter = React.forwardRef<
 });
 TableFooter.displayName = "TableFooter";
 
-const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
+const TableRow = forwardRef<HTMLTableRowElement, TableRowProps>(
   ({ className, ...props }, ref) => {
     return (
       <tr
@@ -115,9 +125,9 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
 );
 TableRow.displayName = "TableRow";
 
-const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
+const TableHead = forwardRef<HTMLTableCellElement, TableHeadProps>(
   ({ className, style, ...props }, ref) => {
-    const { dense } = React.useContext(TableContext);
+    const { dense } = useContext(TableContext);
     const headerPadding = dense ? "var(--tally-spacing-md)" : "var(--tally-spacing-lg)";
     return (
       <th
@@ -139,9 +149,9 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
 );
 TableHead.displayName = "TableHead";
 
-const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
+const TableCell = forwardRef<HTMLTableCellElement, TableCellProps>(
   ({ className, style, ...props }, ref) => {
-    const { dense } = React.useContext(TableContext);
+    const { dense } = useContext(TableContext);
     const padding = dense ? "var(--tally-spacing-sm)" : "var(--tally-spacing-md)";
     return (
       <td
@@ -163,7 +173,7 @@ const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
 );
 TableCell.displayName = "TableCell";
 
-const TableCaption = React.forwardRef<
+const TableCaption = forwardRef<
   HTMLTableCaptionElement,
   TableCaptionProps
 >(({ className, ...props }, ref) => {
