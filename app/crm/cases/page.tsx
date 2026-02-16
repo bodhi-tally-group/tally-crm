@@ -16,10 +16,14 @@ import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 import { mockCases } from "@/lib/mock-data/cases";
 import { mockAccounts } from "@/lib/mock-data/accounts";
+import {
+  CASE_TYPE_GROUPS,
+  CASE_GROUP_TO_TYPE,
+  CASE_TYPE_TO_GROUP,
+  CASE_GROUP_TO_REASON,
+} from "@/lib/mock-data/case-types";
 import SLAIndicator from "@/components/crm/SLAIndicator";
 import type { CaseItem, CasePriority, CaseStatus, CaseType } from "@/types/crm";
-
-const CASE_TYPES: CaseType[] = ["Complaint", "Enquiry", "EWR", "Onboarding", "Dunning"];
 const CASE_PRIORITIES: CasePriority[] = ["Critical", "High", "Medium", "Low"];
 const CASE_ORIGINS = ["Phone", "Email", "Web", "Chat", "Social Media"] as const;
 const CASE_REASONS = [
@@ -34,6 +38,12 @@ const CASE_REASONS = [
   "Other",
 ] as const;
 const OWNER_OPTIONS = ["Priya Sharma", "Daniel Cooper", "John Smith", "Unassigned"];
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 type ViewMode = "kanban" | "list";
 
@@ -707,13 +717,15 @@ function NewCaseModal({
   const [webEmail, setWebEmail] = React.useState("");
   const [status, setStatus] = React.useState<CaseStatus>("New");
   const [caseOrigin, setCaseOrigin] = React.useState("");
-  const [caseType, setCaseType] = React.useState<CaseType | "">("");
+  const [caseGroup, setCaseGroup] = React.useState("");
+  const [caseType, setCaseType] = React.useState("");
   const [priority, setPriority] = React.useState<CasePriority>("Medium");
   const [caseReason, setCaseReason] = React.useState("");
   const [subject, setSubject] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [owner, setOwner] = React.useState(OWNER_OPTIONS[0] ?? "");
-  const [caseDocumentation, setCaseDocumentation] = React.useState("");
+  const [caseDocumentationFiles, setCaseDocumentationFiles] = React.useState<File[]>([]);
+  const caseDocInputRef = React.useRef<HTMLInputElement>(null);
 
   // ── Account search ──────────────────────────────────────────────────
   const [accountSearch, setAccountSearch] = React.useState("");
@@ -798,13 +810,14 @@ function NewCaseModal({
     setWebEmail("");
     setStatus("New");
     setCaseOrigin("");
+    setCaseGroup("");
     setCaseType("");
     setPriority("Medium");
     setCaseReason("");
     setSubject("");
     setDescription("");
     setOwner(OWNER_OPTIONS[0] ?? "");
-    setCaseDocumentation("");
+    setCaseDocumentationFiles([]);
   };
 
   const buildCase = (): CaseItem => {
@@ -819,8 +832,8 @@ function NewCaseModal({
       caseNumber: `CS-2026-${String(caseCount + 1847).padStart(6, "0")}`,
       accountId: accountId || "acc-001",
       accountName: selectedAccount?.name ?? "Unknown Account",
-      type: (caseType || "Enquiry") as CaseType,
-      subType: caseReason || "General Enquiry",
+      type: (CASE_GROUP_TO_TYPE[caseGroup] ?? CASE_GROUP_TO_TYPE[CASE_TYPE_TO_GROUP[caseType]] ?? "Enquiry") as CaseType,
+      subType: caseType || caseReason || "General Enquiry",
       status,
       priority,
       slaStatus: "On Track",
@@ -834,7 +847,14 @@ function NewCaseModal({
       resolution: "",
       communications: [],
       activities: [],
-      attachments: [],
+      attachments: caseDocumentationFiles.map((file, i) => ({
+        id: `att-${Date.now()}-${i}`,
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: formatFileSize(file.size),
+        uploadedBy: owner,
+        uploadedDate: new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "2-digit", year: "numeric" }),
+      })),
       relatedCases: [],
     };
   };
@@ -857,7 +877,7 @@ function NewCaseModal({
   const sectionHeading =
     "col-span-2 pt-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400";
   const sectionHeadingWithDivider =
-    "col-span-2 pt-6 pb-2 mt-2 border-t border-border text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:border-gray-700 dark:text-gray-400";
+    "col-span-2 pt-4 pb-1.5 mt-1 border-b border-border mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:border-gray-700 dark:text-gray-400";
 
   return (
     <div
@@ -872,7 +892,7 @@ function NewCaseModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Header ─────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between border-b border-border px-6 py-5 dark:border-gray-700">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 dark:border-gray-700">
           <h2
             id="new-case-modal-title"
             className="text-lg font-bold text-gray-900 dark:text-gray-100"
@@ -891,9 +911,9 @@ function NewCaseModal({
 
         {/* ── Form ───────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit}>
-          <div className="px-6 py-6 space-y-6">
+          <div className="px-6 py-4 space-y-4">
             {/* ── Case Owner (above Case Information) ────────────── */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className={formLabel}>Case Owner</label>
               <div className="relative max-w-xs">
                 <select
@@ -917,8 +937,8 @@ function NewCaseModal({
             </div>
 
             {/* ── Case Information ──────────────────────────────── */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-6 pt-1">
-              <div className={sectionHeading}>Case Information</div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4 pt-0">
+              <div className={sectionHeadingWithDivider}>Case Information</div>
 
               {/* Account Name (left column, row 1) */}
               <div className="relative space-y-1.5">
@@ -1174,16 +1194,17 @@ function NewCaseModal({
             <div className={sectionHeadingWithDivider}>Additional Information</div>
 
             {/* Status */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className={formLabel}>
                 Status <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <select
-                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9", "disabled:cursor-not-allowed disabled:opacity-60")}
                   style={{ fontSize: "var(--tally-font-size-sm)" }}
                   value={status}
                   onChange={(e) => setStatus(e.target.value as CaseStatus)}
+                  disabled
                 >
                   {CASE_STATUSES.map((s) => (
                     <option key={s} value={s}>
@@ -1199,21 +1220,66 @@ function NewCaseModal({
               </div>
             </div>
 
-            {/* Case Documentation */}
-            <div className="space-y-1.5">
+            {/* Case Documentation (upload from device) */}
+            <div className="space-y-1 col-span-2">
               <label className={formLabel}>Case Documentation</label>
               <input
-                type="text"
-                className={formInput}
-                style={{ fontSize: "var(--tally-font-size-sm)" }}
-                value={caseDocumentation}
-                onChange={(e) => setCaseDocumentation(e.target.value)}
-                placeholder=""
+                ref={caseDocInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
+                onChange={(e) => {
+                  const chosen = e.target.files;
+                  if (chosen?.length) {
+                    setCaseDocumentationFiles((prev) => [...prev, ...Array.from(chosen)]);
+                    e.target.value = "";
+                  }
+                }}
               />
+              <button
+                type="button"
+                onClick={() => caseDocInputRef.current?.click()}
+                className={cn(
+                  formInput,
+                  "flex cursor-pointer items-center gap-2 border-dashed text-left text-muted-foreground hover:border-[#2C365D] hover:bg-gray-50/50 hover:text-gray-700 dark:hover:bg-gray-800/50 dark:hover:text-gray-300"
+                )}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
+                <Icon name="upload" size={20} className="shrink-0" />
+                <span>Choose files from device</span>
+              </button>
+              {caseDocumentationFiles.length > 0 && (
+                <ul className="mt-2 space-y-1.5 rounded-md border border-border bg-gray-50/50 py-2 px-3 dark:border-gray-700 dark:bg-gray-800/30">
+                  {caseDocumentationFiles.map((file, index) => (
+                    <li
+                      key={`${file.name}-${index}`}
+                      className="flex items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="truncate text-gray-700 dark:text-gray-300" title={file.name}>
+                        {file.name}
+                      </span>
+                      <span className="shrink-0 text-muted-foreground">
+                        {formatFileSize(file.size)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCaseDocumentationFiles((prev) => prev.filter((_, i) => i !== index))
+                        }
+                        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <Icon name="close" size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Case Origin */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className={formLabel}>
                 Case Origin <span className="text-red-500">*</span>
               </label>
@@ -1240,20 +1306,65 @@ function NewCaseModal({
               </div>
             </div>
 
-            {/* Type */}
-            <div className="space-y-1.5">
-              <label className={formLabel}>Type</label>
+            {/* Case Group */}
+            <div className="space-y-1">
+              <label className={formLabel}>Case Group</label>
               <div className="relative">
                 <select
                   className={cn(formInput, "cursor-pointer appearance-none pr-9")}
                   style={{ fontSize: "var(--tally-font-size-sm)" }}
-                  value={caseType}
-                  onChange={(e) => setCaseType(e.target.value as CaseType | "")}
+                  value={caseGroup}
+                  onChange={(e) => {
+                    const nextGroup = e.target.value;
+                    setCaseGroup(nextGroup);
+                    const typesInGroup = CASE_TYPE_GROUPS[nextGroup] ?? [];
+                    if (caseType && !typesInGroup.includes(caseType)) {
+                      setCaseType("");
+                    }
+                  }}
                 >
-                  <option value="">--None--</option>
-                  {CASE_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
+                  <option value="">--Select case group--</option>
+                  {Object.keys(CASE_TYPE_GROUPS).map((groupName) => (
+                    <option key={groupName} value={groupName}>
+                      {groupName}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Case Type (options depend on selected Case Group) */}
+            <div className="space-y-1">
+              <label className={formLabel}>Case Type</label>
+              <div className="relative">
+                <select
+                  className={cn(
+                    formInput,
+                    "cursor-pointer appearance-none pr-9",
+                    !caseGroup && "cursor-not-allowed opacity-60"
+                  )}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={caseType}
+                  disabled={!caseGroup}
+                  onChange={(e) => {
+                    const typeName = e.target.value;
+                    setCaseType(typeName);
+                    if (caseGroup && CASE_GROUP_TO_REASON[caseGroup]) {
+                      setCaseReason(CASE_GROUP_TO_REASON[caseGroup]);
+                    }
+                  }}
+                >
+                  <option value="">
+                    {caseGroup ? "--Select case type--" : "Select case group first"}
+                  </option>
+                  {(CASE_TYPE_GROUPS[caseGroup] ?? []).map((typeName) => (
+                    <option key={typeName} value={typeName}>
+                      {typeName}
                     </option>
                   ))}
                 </select>
@@ -1266,7 +1377,7 @@ function NewCaseModal({
             </div>
 
             {/* Priority */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className={formLabel}>Priority</label>
               <div className="relative">
                 <select
@@ -1290,7 +1401,7 @@ function NewCaseModal({
             </div>
 
             {/* Case Reason */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <label className={formLabel}>Case Reason</label>
               <div className="relative">
                 <select
@@ -1345,7 +1456,7 @@ function NewCaseModal({
           </div>
 
           {/* ── Footer ─────────────────────────────────────────────── */}
-          <div className="flex justify-end gap-3 border-t border-border px-6 py-4 dark:border-gray-700">
+          <div className="flex justify-end gap-3 border-t border-border px-6 py-3 dark:border-gray-700">
             <Button variant="outline" size="md" type="button" onClick={onClose}>
               Cancel
             </Button>
