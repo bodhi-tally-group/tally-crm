@@ -25,14 +25,35 @@ export type AccountType = "Residential" | "Commercial" | "Industrial";
 
 export type EnergyType = "Electricity" | "Gas" | "Dual Fuel";
 
+// ── Site ───────────────────────────────────────────────────────────────────
+
+export interface Site {
+  id: string;
+  name: string;
+}
+
+// ── Org (parent company) ──────────────────────────────────────────────────
+
+export type OrgType = "Parent Company" | "Subsidiary" | "Division";
+
+export interface Org {
+  id: string;
+  name: string;
+  type?: OrgType;
+  address?: string;
+  abnAcn?: string;
+}
+
 // ── Account ─────────────────────────────────────────────────────────────────
 
 export interface Account {
   id: string;
+  orgId: string;
   name: string;
   accountNumber: string;
   type: AccountType;
   status: "Active" | "Suspended" | "Closed";
+  sites: Site[];
   nmis: string[];
   energyType: EnergyType;
   primaryContact: Contact;

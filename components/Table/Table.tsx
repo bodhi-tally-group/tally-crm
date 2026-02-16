@@ -1,9 +1,13 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 
+const TableContext = React.createContext<{ dense?: boolean }>({});
+
 export interface TableProps
   extends React.TableHTMLAttributes<HTMLTableElement> {
   disableWrapper?: boolean;
+  /** When true, reduces row padding to match compact tables (e.g. Cases list) */
+  dense?: boolean;
 }
 
 export interface TableHeaderProps
@@ -28,13 +32,15 @@ export interface TableCaptionProps
   extends React.HTMLAttributes<HTMLTableCaptionElement> {}
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
-  ({ className, disableWrapper, ...props }, ref) => {
+  ({ className, disableWrapper, dense, ...props }, ref) => {
     const table = (
-      <table
-        ref={ref}
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
+      <TableContext.Provider value={{ dense }}>
+        <table
+          ref={ref}
+          className={cn("w-full caption-bottom text-sm", className)}
+          {...props}
+        />
+      </TableContext.Provider>
     );
     if (disableWrapper) {
       return table;
@@ -99,7 +105,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(
       <tr
         ref={ref}
         className={cn(
-          "border-b border-border transition-colors hover:bg-gray-50 data-[state=selected]:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 dark:data-[state=selected]:bg-gray-700/50",
+          "border-b border-gray-200 transition-colors hover:bg-gray-50 data-[state=selected]:bg-gray-50 dark:border-gray-700/60 dark:hover:bg-gray-700/50 dark:data-[state=selected]:bg-gray-700/50",
           className
         )}
         {...props}
@@ -111,6 +117,8 @@ TableRow.displayName = "TableRow";
 
 const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
   ({ className, style, ...props }, ref) => {
+    const { dense } = React.useContext(TableContext);
+    const headerPadding = dense ? "var(--tally-spacing-md)" : "var(--tally-spacing-lg)";
     return (
       <th
         ref={ref}
@@ -119,8 +127,8 @@ const TableHead = React.forwardRef<HTMLTableCellElement, TableHeadProps>(
           className
         )}
         style={{
-          paddingTop: "var(--tally-spacing-md)",
-          paddingBottom: "var(--tally-spacing-md)",
+          paddingTop: headerPadding,
+          paddingBottom: headerPadding,
           fontSize: "var(--tally-font-size-sm)",
           ...style,
         }}
@@ -133,6 +141,8 @@ TableHead.displayName = "TableHead";
 
 const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
   ({ className, style, ...props }, ref) => {
+    const { dense } = React.useContext(TableContext);
+    const padding = dense ? "var(--tally-spacing-sm)" : "var(--tally-spacing-md)";
     return (
       <td
         ref={ref}
@@ -141,8 +151,8 @@ const TableCell = React.forwardRef<HTMLTableCellElement, TableCellProps>(
           className
         )}
         style={{
-          paddingTop: "var(--tally-spacing-md)",
-          paddingBottom: "var(--tally-spacing-md)",
+          paddingTop: padding,
+          paddingBottom: padding,
           fontSize: "var(--tally-font-size-sm)",
           ...style,
         }}

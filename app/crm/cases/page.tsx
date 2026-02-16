@@ -447,7 +447,7 @@ export default function CaseListPage() {
       {viewMode === "list" && (
         <>
           <div className="overflow-hidden rounded-density-md border border-border bg-white dark:border-gray-700 dark:bg-gray-900">
-            <Table>
+            <Table dense>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   {renderSortHeader("caseNumber", "Case #")}
@@ -701,7 +701,9 @@ function NewCaseModal({
 }) {
   // ── Form state ──────────────────────────────────────────────────────
   const [contactName, setContactName] = React.useState("");
+  const [contactId, setContactId] = React.useState("");
   const [accountId, setAccountId] = React.useState("");
+  const [siteId, setSiteId] = React.useState("");
   const [webEmail, setWebEmail] = React.useState("");
   const [status, setStatus] = React.useState<CaseStatus>("New");
   const [caseOrigin, setCaseOrigin] = React.useState("");
@@ -730,25 +732,27 @@ function NewCaseModal({
 
   const selectedAccount = mockAccounts.find((a) => a.id === accountId);
 
-  // ── Contact search ──────────────────────────────────────────────────
-  const [contactSearch, setContactSearch] = React.useState("");
-  const [contactDropdownOpen, setContactDropdownOpen] = React.useState(false);
-  const contactInputRef = React.useRef<HTMLInputElement>(null);
+  // ── Sites (by account) ──────────────────────────────────────────────
+  const availableSites = React.useMemo(
+    () => selectedAccount?.sites ?? [],
+    [selectedAccount]
+  );
+  const [siteDropdownOpen, setSiteDropdownOpen] = React.useState(false);
+  const siteDropdownRef = React.useRef<HTMLDivElement>(null);
 
+  // ── Contact (by account; only after account + site) ─────────────────
   const availableContacts = React.useMemo(() => {
+    if (!accountId || !siteId) return [];
     const acc = mockAccounts.find((a) => a.id === accountId);
     return acc?.contacts ?? [];
-  }, [accountId]);
+  }, [accountId, siteId]);
 
-  const filteredContacts = React.useMemo(() => {
-    if (!contactSearch) return availableContacts;
-    const q = contactSearch.toLowerCase();
-    return availableContacts.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q)
-    );
-  }, [contactSearch, availableContacts]);
+  const [contactDropdownOpen, setContactDropdownOpen] = React.useState(false);
+  const contactDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // ── Email (by account contacts; same list as Contact) ───────────────
+  const [emailDropdownOpen, setEmailDropdownOpen] = React.useState(false);
+  const emailDropdownRef = React.useRef<HTMLDivElement>(null);
 
   // ── Close dropdowns on outside click ────────────────────────────────
   React.useEffect(() => {
@@ -760,10 +764,22 @@ function NewCaseModal({
         setAccountDropdownOpen(false);
       }
       if (
-        contactInputRef.current &&
-        !contactInputRef.current.parentElement?.contains(e.target as Node)
+        siteDropdownRef.current &&
+        !siteDropdownRef.current.contains(e.target as Node)
+      ) {
+        setSiteDropdownOpen(false);
+      }
+      if (
+        contactDropdownRef.current &&
+        !contactDropdownRef.current.contains(e.target as Node)
       ) {
         setContactDropdownOpen(false);
+      }
+      if (
+        emailDropdownRef.current &&
+        !emailDropdownRef.current.contains(e.target as Node)
+      ) {
+        setEmailDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -775,7 +791,9 @@ function NewCaseModal({
 
   const resetForm = () => {
     setContactName("");
+    setContactId("");
     setAccountId("");
+    setSiteId("");
     setAccountSearch("");
     setWebEmail("");
     setStatus("New");
@@ -837,9 +855,9 @@ function NewCaseModal({
     "h-10 w-full rounded-density-md border border-border bg-white px-3 outline-none placeholder:text-muted-foreground focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100";
   const formLabel = "text-sm font-medium text-gray-900 dark:text-gray-100";
   const sectionHeading =
-    "col-span-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400";
+    "col-span-2 pt-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400";
   const sectionHeadingWithDivider =
-    "col-span-2 pt-4 mt-1 border-t border-border text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:border-gray-700 dark:text-gray-400";
+    "col-span-2 pt-6 pb-2 mt-2 border-t border-border text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:border-gray-700 dark:text-gray-400";
 
   return (
     <div
@@ -873,14 +891,11 @@ function NewCaseModal({
 
         {/* ── Form ───────────────────────────────────────────────── */}
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5 px-6 py-6">
-            {/* ── Case Information ──────────────────────────────── */}
-            <div className={sectionHeading}>Case Information</div>
-
-            {/* Owner */}
+          <div className="px-6 py-6 space-y-6">
+            {/* ── Case Owner (above Case Information) ────────────── */}
             <div className="space-y-1.5">
               <label className={formLabel}>Case Owner</label>
-              <div className="relative">
+              <div className="relative max-w-xs">
                 <select
                   className={cn(formInput, "cursor-pointer appearance-none pr-9")}
                   style={{ fontSize: "var(--tally-font-size-sm)" }}
@@ -901,158 +916,259 @@ function NewCaseModal({
               </div>
             </div>
 
-            {/* Placeholder for grid alignment */}
-            <div />
+            {/* ── Case Information ──────────────────────────────── */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-6 pt-1">
+              <div className={sectionHeading}>Case Information</div>
 
-            {/* Contact Name (search) */}
-            <div className="relative space-y-1.5">
-              <label className={formLabel}>Contact Name</label>
-              <div className="relative">
-                <input
-                  ref={contactInputRef}
-                  type="text"
-                  className={formInput}
-                  style={{ fontSize: "var(--tally-font-size-sm)" }}
-                  value={contactName || contactSearch}
-                  onChange={(e) => {
-                    setContactName("");
-                    setContactSearch(e.target.value);
-                    setContactDropdownOpen(true);
-                  }}
-                  onFocus={() => setContactDropdownOpen(true)}
-                  placeholder="Search Contacts..."
-                />
-                <Icon
-                  name="search"
-                  size={16}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-              </div>
-              {contactDropdownOpen && (
-                <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
-                  {filteredContacts.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                      {accountId
-                        ? "No contacts found"
-                        : "Select an account first"}
-                    </div>
-                  ) : (
-                    filteredContacts.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                        onClick={() => {
-                          setContactName(c.name);
-                          setContactSearch("");
-                          setWebEmail(c.email);
-                          setContactDropdownOpen(false);
-                        }}
-                      >
-                        <Icon name="person" size={14} className="text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {c.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {c.email}
-                          </p>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Account Name (search) */}
-            <div className="relative space-y-1.5">
-              <label className={formLabel}>
-                Account Name <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  ref={accountInputRef}
-                  type="text"
-                  className={formInput}
-                  style={{ fontSize: "var(--tally-font-size-sm)" }}
-                  value={
-                    selectedAccount ? selectedAccount.name : accountSearch
-                  }
-                  onChange={(e) => {
-                    setAccountId("");
-                    setAccountSearch(e.target.value);
-                    setAccountDropdownOpen(true);
-                  }}
-                  onFocus={() => {
-                    if (selectedAccount) {
-                      setAccountSearch(selectedAccount.name);
-                      setAccountId("");
+              {/* Account Name (left column, row 1) */}
+              <div className="relative space-y-1.5">
+                <label className={formLabel}>
+                  Account Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    ref={accountInputRef}
+                    type="text"
+                    className={formInput}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    value={
+                      selectedAccount ? selectedAccount.name : accountSearch
                     }
-                    setAccountDropdownOpen(true);
-                  }}
-                  placeholder="Search Accounts..."
-                  required
-                />
-                <Icon
-                  name="search"
-                  size={16}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-              </div>
-              {accountDropdownOpen && (
-                <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
-                  {filteredAccounts.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                      No accounts found
-                    </div>
-                  ) : (
-                    filteredAccounts.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                        onClick={() => {
-                          setAccountId(a.id);
-                          setAccountSearch("");
-                          setContactName("");
-                          setContactSearch("");
-                          setAccountDropdownOpen(false);
-                        }}
-                      >
-                        <Icon
-                          name="domain"
-                          size={14}
-                          className="text-muted-foreground"
-                        />
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {a.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {a.accountNumber}
-                          </p>
-                        </div>
-                      </button>
-                    ))
-                  )}
+                    onChange={(e) => {
+                      setAccountId("");
+                      setAccountSearch(e.target.value);
+                      setAccountDropdownOpen(true);
+                    }}
+                    onFocus={() => {
+                      if (selectedAccount) {
+                        setAccountSearch(selectedAccount.name);
+                        setAccountId("");
+                      }
+                      setAccountDropdownOpen(true);
+                    }}
+                    placeholder="Search Accounts..."
+                    required
+                  />
+                  <Icon
+                    name="search"
+                    size={16}
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
                 </div>
-              )}
-            </div>
+                {accountDropdownOpen && (
+                  <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    {filteredAccounts.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        No accounts found
+                      </div>
+                    ) : (
+                      filteredAccounts.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setAccountId(a.id);
+                            setAccountSearch("");
+                            setSiteId("");
+                            setContactId("");
+                            setContactName("");
+                            setWebEmail("");
+                            setAccountDropdownOpen(false);
+                          }}
+                        >
+                          <Icon
+                            name="domain"
+                            size={14}
+                            className="text-muted-foreground"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {a.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {a.accountNumber}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
 
-            {/* Web Email */}
-            <div className="col-span-2 space-y-1.5 sm:col-span-1">
-              <label className={formLabel}>Web Email</label>
-              <input
-                type="email"
-                className={formInput}
-                style={{ fontSize: "var(--tally-font-size-sm)" }}
-                value={webEmail}
-                onChange={(e) => setWebEmail(e.target.value)}
-                placeholder="email@example.com"
-              />
-            </div>
-            <div className="hidden sm:block" />
+              {/* Site (right column, row 1) */}
+              <div className="relative space-y-1.5" ref={siteDropdownRef}>
+                <label className={formLabel}>Site</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={cn(
+                      formInput,
+                      "flex items-center justify-between text-left cursor-pointer"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    onClick={() => setSiteDropdownOpen((o) => !o)}
+                  >
+                    <span className={!siteId ? "text-muted-foreground" : ""}>
+                      {siteId
+                        ? availableSites.find((s) => s.id === siteId)?.name ??
+                          siteId
+                        : "Select site"}
+                    </span>
+                    <Icon
+                      name="expand_more"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                  </button>
+                </div>
+                {siteDropdownOpen && (
+                  <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    {availableSites.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        {accountId ? "No sites for this account" : "Select an account first"}
+                      </div>
+                    ) : (
+                      availableSites.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setSiteId(s.id);
+                            setContactId("");
+                            setContactName("");
+                            setWebEmail("");
+                            setSiteDropdownOpen(false);
+                          }}
+                        >
+                          <Icon name="place" size={14} className="text-muted-foreground" />
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {s.name}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Contact Name (left column, row 2) */}
+              <div className="relative space-y-1.5" ref={contactDropdownRef}>
+                <label className={formLabel}>Contact Name</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={cn(
+                      formInput,
+                      "flex items-center justify-between text-left cursor-pointer"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    onClick={() => setContactDropdownOpen((o) => !o)}
+                  >
+                    <span className={!contactName ? "text-muted-foreground" : ""}>
+                      {contactName || "Select contact"}
+                    </span>
+                    <Icon
+                      name="expand_more"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                  </button>
+                </div>
+                {contactDropdownOpen && (
+                  <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    {availableContacts.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        {accountId && siteId ? "No contacts for this account" : "Select an account and site first"}
+                      </div>
+                    ) : (
+                      availableContacts.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setContactId(c.id);
+                            setContactName(c.name);
+                            setWebEmail(c.email);
+                            setContactDropdownOpen(false);
+                          }}
+                        >
+                          <Icon name="person" size={14} className="text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {c.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {c.email}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Email (right column, row 2) */}
+              <div className="relative space-y-1.5" ref={emailDropdownRef}>
+                <label className={formLabel}>Email</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={cn(
+                      formInput,
+                      "flex items-center justify-between text-left cursor-pointer"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    onClick={() => setEmailDropdownOpen((o) => !o)}
+                  >
+                    <span className={!webEmail ? "text-muted-foreground" : ""}>
+                      {webEmail || "Select email"}
+                    </span>
+                    <Icon
+                      name="expand_more"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                  </button>
+                </div>
+                {emailDropdownOpen && (
+                  <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    {availableContacts.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        {accountId && siteId ? "No contacts for this account" : "Select an account and site first"}
+                      </div>
+                    ) : (
+                      availableContacts.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setContactId(c.id);
+                            setContactName(c.name);
+                            setWebEmail(c.email);
+                            setEmailDropdownOpen(false);
+                          }}
+                        >
+                          <Icon name="mail" size={14} className="text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {c.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {c.email}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
 
             {/* ── Additional Information ────────────────────────── */}
             <div className={sectionHeadingWithDivider}>Additional Information</div>
@@ -1225,6 +1341,7 @@ function NewCaseModal({
                 placeholder="Detailed description of the case..."
               />
             </div>
+          </div>
           </div>
 
           {/* ── Footer ─────────────────────────────────────────────── */}

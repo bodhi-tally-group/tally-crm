@@ -14,9 +14,19 @@ import { cn } from "@/lib/utils";
 /* ─── Nav items ─────────────────────────────────────────────────────────── */
 
 const navItems: NavigationItem[] = [
-  // Hidden for now: Dashboard, Opportunities, Communications, Performance & SLA, Contracts, Multi Demo
   { id: "cases", label: "Cases", icon: "inbox", href: "/crm/cases" },
   { id: "pipeline", label: "Pipeline", icon: "trending_up", href: "/crm/pipeline" },
+  {
+    id: "customer-management",
+    label: "Customer Management",
+    icon: "people",
+    href: "/crm/customer",
+    children: [
+      { id: "org-management", label: "Org Management", href: "/crm/customer/orgs" },
+      { id: "account-management", label: "Account management", href: "/crm/customer/accounts" },
+      { id: "contact-management", label: "Contact management", href: "/crm/customer/contacts" },
+    ],
+  },
 ];
 
 const bottomNavItems: NavigationItem[] = [
@@ -93,11 +103,19 @@ export default function CRMLayout({
   // Determine default active nav id from pathname
   const defaultActiveId = pathname.startsWith("/crm/pipeline")
     ? "pipeline"
-    : pathname.startsWith("/crm/cases")
-      ? "cases"
-      : pathname.startsWith("/crm/settings")
-        ? "settings"
-        : "cases";
+    : pathname.startsWith("/crm/customer/contacts")
+      ? "contact-management"
+      : pathname.startsWith("/crm/customer/accounts")
+        ? "account-management"
+        : pathname.startsWith("/crm/customer/orgs")
+          ? "org-management"
+          : pathname.startsWith("/crm/customer")
+            ? "customer-management"
+            : pathname.startsWith("/crm/cases")
+              ? "cases"
+              : pathname.startsWith("/crm/settings")
+                ? "settings"
+                : "cases-list";
 
   return (
     <div className="flex h-screen min-w-0 flex-col overflow-hidden bg-[#F9F9FB] dark:bg-gray-900">
