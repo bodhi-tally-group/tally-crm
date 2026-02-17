@@ -35,14 +35,17 @@ function DataRow({
   return (
     <div className={cn("flex flex-col gap-0.5", className)}>
       <span
-        className={cn(
-          "font-medium uppercase tracking-wide text-muted-foreground",
-          compact ? "text-[10px]" : "text-xs"
-        )}
+        className="font-medium uppercase tracking-wide text-muted-foreground"
+        style={{ fontSize: "var(--tally-font-size-xs)" }}
       >
         {label}
       </span>
-      <span className={cn("text-gray-900 dark:text-gray-100", compact ? "text-xs" : "text-sm")}>
+      <span
+        className="text-gray-900 dark:text-gray-100"
+        style={{
+          fontSize: compact ? "var(--tally-font-size-xs)" : "var(--tally-font-size-sm)",
+        }}
+      >
         {value}
       </span>
     </div>
@@ -71,9 +74,12 @@ export default function AccountContextPanel({
       )}
     >
       {/* Header */}
-      <div className="flex items-center border-b border-border px-3 py-2 dark:border-gray-800">
+      <div className="flex items-center border-b border-border px-density-md py-density-sm dark:border-gray-800">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2C365D] text-[10px] font-bold text-white">
+          <div
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2C365D] font-bold text-white"
+            style={{ fontSize: "var(--tally-font-size-xs)" }}
+          >
             {account.name
               .split(" ")
               .slice(0, 2)
@@ -81,10 +87,16 @@ export default function AccountContextPanel({
               .join("")}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">
+            <p
+              className="truncate font-semibold text-gray-900 dark:text-gray-100"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
               {account.name}
             </p>
-            <p className="text-[11px] text-muted-foreground">
+            <p
+              className="text-muted-foreground"
+              style={{ fontSize: "var(--tally-font-size-xs)" }}
+            >
               {account.accountNumber}
             </p>
           </div>
@@ -92,102 +104,129 @@ export default function AccountContextPanel({
       </div>
 
       {/* Content — scrollable when taller than panel */}
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
-        <div className="space-y-2.5">
-          {/* Account type and status */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant={accountTypeVariant} className="text-[10px] px-1.5 py-0">
-              {account.type}
-            </Badge>
-            <Badge
-              variant={account.status === "Active" ? "success" : "error"}
-              className="text-[10px] px-1.5 py-0"
-            >
-              {account.status}
-            </Badge>
-          </div>
-
-          {/* NMIs */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              NMI{account.nmis.length > 1 ? "s" : ""}
-            </span>
-            {account.nmis.map((nmi) => (
-              <div
-                key={nmi}
-                className="flex items-center gap-1.5 rounded bg-gray-50 px-2 py-1 text-xs font-mono text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-density-md py-density-sm">
+        <div className="flex flex-col gap-density-lg">
+          {/* Section: Account type, NMIs, key fields */}
+          <div className="flex flex-col gap-density-sm">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge
+                variant={accountTypeVariant}
+                className="px-1.5 py-0"
+                style={{ fontSize: "var(--tally-font-size-xs)" }}
               >
-                <Icon
-                  name="electric_meter"
-                  size={14}
-                  className="shrink-0 text-gray-400"
-                />
-                <span className="truncate">{nmi}</span>
-              </div>
-            ))}
-          </div>
+                {account.type}
+              </Badge>
+              <Badge
+                variant={account.status === "Active" ? "success" : "error"}
+                className="px-1.5 py-0"
+                style={{ fontSize: "var(--tally-font-size-xs)" }}
+              >
+                {account.status}
+              </Badge>
+            </div>
 
-          {/* Key fields */}
-          <DataRow label="Energy Type" value={account.energyType} compact />
-          <DataRow label="Address" value={account.address} compact />
-          <DataRow
-            label="Annual Consumption"
-            value={account.annualConsumption}
-            compact
-          />
-
-          {/* Divider */}
-          <div className="border-t border-border dark:border-gray-800" />
-
-          {/* Financial */}
-          <DataRow
-            label="Account Balance"
-            value={
+            <div className="space-y-1">
               <span
-                className={cn(
-                  "font-semibold",
-                  account.accountBalance.startsWith("-")
-                    ? "text-[#C40000]"
-                    : "text-[#008000]"
-                )}
+                className="font-medium uppercase tracking-wide text-muted-foreground"
+                style={{ fontSize: "var(--tally-font-size-xs)" }}
               >
-                {account.accountBalance}
+                NMI{account.nmis.length > 1 ? "s" : ""}
               </span>
-            }
-            compact
-          />
-          <DataRow
-            label="Last Payment"
-            value={`${account.lastPaymentAmount} on ${account.lastPaymentDate}`}
-            compact
-          />
-          <DataRow
-            label="Contract End"
-            value={account.contractEndDate}
-            compact
-          />
+              {account.nmis.map((nmi) => (
+                <div
+                  key={nmi}
+                  className="flex items-center gap-1.5 rounded bg-gray-50 px-2 py-1 font-mono text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                >
+                  <Icon
+                    name="electric_meter"
+                    size={14}
+                    className="shrink-0 text-gray-400"
+                  />
+                  <span className="truncate">{nmi}</span>
+                </div>
+              ))}
+            </div>
+
+            <DataRow label="Energy Type" value={account.energyType} compact />
+            <DataRow label="Address" value={account.address} compact />
+            <DataRow
+              label="Annual Consumption"
+              value={account.annualConsumption}
+              compact
+            />
+          </div>
 
           {/* Divider */}
           <div className="border-t border-border dark:border-gray-800" />
 
-          {/* Primary contact */}
+          {/* Section: Financial */}
+          <div className="flex flex-col gap-density-sm">
+            <DataRow
+              label="Account Balance"
+              value={
+                <span
+                  className={cn(
+                    "font-semibold",
+                    account.accountBalance.startsWith("-")
+                      ? "text-[#C40000]"
+                      : "text-[#008000]"
+                  )}
+                  style={{ fontSize: "var(--tally-font-size-xs)" }}
+                >
+                  {account.accountBalance}
+                </span>
+              }
+              compact
+            />
+            <DataRow
+              label="Last Payment"
+              value={`${account.lastPaymentAmount} on ${account.lastPaymentDate}`}
+              compact
+            />
+            <DataRow
+              label="Contract End"
+              value={account.contractEndDate}
+              compact
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border dark:border-gray-800" />
+
+          {/* Section: Primary contact */}
           <div className="space-y-1">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span
+              className="font-medium uppercase tracking-wide text-muted-foreground"
+              style={{ fontSize: "var(--tally-font-size-xs)" }}
+            >
               Primary Contact
             </span>
-            <div className="rounded border border-border bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-900">
-              <p className="text-xs font-medium text-gray-900 dark:text-gray-100">
+            <div className="rounded-density-md border border-border bg-gray-50 p-density-sm dark:border-gray-700 dark:bg-gray-900">
+              <p
+                className="font-medium text-gray-900 dark:text-gray-100"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
                 {account.primaryContact.name}
               </p>
-              <p className="text-[11px] text-muted-foreground">
+              <p
+                className="text-muted-foreground"
+                style={{ fontSize: "var(--tally-font-size-xs)" }}
+              >
                 {account.primaryContact.role}
               </p>
               <div className="mt-1.5 space-y-0.5">
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400">
+                <div
+                  className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
+                  style={{ fontSize: "var(--tally-font-size-xs)" }}
+                >
                   <Icon name="mail" size={12} className="shrink-0" />
                   <span className="truncate">{account.primaryContact.email}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400">
+                <div
+                  className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400"
+                  style={{ fontSize: "var(--tally-font-size-xs)" }}
+                >
                   <Icon name="phone" size={12} className="shrink-0" />
                   {account.primaryContact.phone}
                 </div>
@@ -195,20 +234,24 @@ export default function AccountContextPanel({
             </div>
           </div>
 
-          {/* Linked Cases — only show cases from the same org; optional "Link case" button */}
+          {/* Section: Linked Cases — only show cases from the same org; optional "Link case" button */}
           {(linkedCaseNumbers.length > 0 || onOpenLinkModal) && (
             <>
               <div className="border-t border-border dark:border-gray-800" />
               <div className="space-y-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  <span
+                    className="font-medium uppercase tracking-wide text-muted-foreground"
+                    style={{ fontSize: "var(--tally-font-size-xs)" }}
+                  >
                     Linked Cases
                   </span>
                   {onOpenLinkModal && (
                     <button
                       type="button"
                       onClick={onOpenLinkModal}
-                      className="text-[10px] font-medium text-[#2C365D] hover:underline dark:text-[#7c8cb8]"
+                      className="font-medium text-[#2C365D] hover:underline dark:text-[#7c8cb8]"
+                      style={{ fontSize: "var(--tally-font-size-xs)" }}
                     >
                       + Link case
                     </button>
@@ -222,7 +265,10 @@ export default function AccountContextPanel({
                   if (linkedCasesSameOrg.length === 0 && !onOpenLinkModal) return null;
                   if (linkedCasesSameOrg.length === 0) {
                     return (
-                      <p className="text-[11px] text-muted-foreground">
+                      <p
+                        className="text-muted-foreground"
+                        style={{ fontSize: "var(--tally-font-size-xs)" }}
+                      >
                         No linked cases. Use &quot;Link case&quot; to add one.
                       </p>
                     );
@@ -233,19 +279,36 @@ export default function AccountContextPanel({
                         <li key={linkedCase.id}>
                           <Link
                             href={`/crm/cases/${linkedCase.id}`}
-                            className="block w-full rounded-lg border border-border bg-gray-50/80 px-2.5 py-2 text-left transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/40 dark:hover:bg-gray-800/60"
+                            className="block w-full rounded-density-md border border-border bg-gray-50/80 px-density-sm py-density-sm text-left transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/40 dark:hover:bg-gray-800/60"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                              <span
+                                className="truncate font-medium text-gray-900 dark:text-gray-100"
+                                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                              >
                                 {linkedCase.caseNumber}
                               </span>
                             </div>
-                            <p className="mt-0.5 truncate text-xs text-muted-foreground" title={linkedCase.accountName}>
+                            <p
+                              className="mt-0.5 truncate text-muted-foreground"
+                              title={linkedCase.accountName}
+                              style={{ fontSize: "var(--tally-font-size-xs)" }}
+                            >
                               {linkedCase.accountName}
                             </p>
                             <div className="mt-1.5 flex items-center justify-between gap-2">
-                              <span className="truncate text-[11px] text-muted-foreground">{linkedCase.status}</span>
-                              <SLAIndicator status={linkedCase.slaStatus} size="sm" showIcon={false} className="shrink-0 text-[11px]" />
+                              <span
+                                className="truncate text-muted-foreground"
+                                style={{ fontSize: "var(--tally-font-size-xs)" }}
+                              >
+                                {linkedCase.status}
+                              </span>
+                              <SLAIndicator
+                                status={linkedCase.slaStatus}
+                                size="sm"
+                                showIcon={false}
+                                className="shrink-0"
+                              />
                             </div>
                           </Link>
                         </li>

@@ -64,6 +64,8 @@ export interface Account {
   lastPaymentDate: string;
   lastPaymentAmount: string;
   contractEndDate: string;
+  /** Optional: other account IDs this account is linked to (e.g. shared sites, consolidated billing). */
+  linkedAccountIds?: string[];
 }
 
 // ── Contact ─────────────────────────────────────────────────────────────────

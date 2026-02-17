@@ -42,7 +42,7 @@ export default function CaseListSidebar({
   className,
 }: CaseListSidebarProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [listView, setListView] = React.useState<ListViewId>("all");
+  const [listView, setListView] = React.useState<ListViewId>("my");
   const [accountFilter, setAccountFilter] = React.useState("");
 
   const accountNames = React.useMemo(
@@ -92,6 +92,9 @@ export default function CaseListSidebar({
 
     return result;
   }, [cases, listView, accountFilter, searchQuery]);
+
+  // In compact (tab) mode, the page header controls filtering; show the cases we're given without re-filtering.
+  const displayList = compact ? cases : filtered;
 
   return (
     <aside
@@ -174,20 +177,20 @@ export default function CaseListSidebar({
             </div>
 
             <p className="mt-2 text-xs text-muted-foreground">
-              {filtered.length} of {cases.length} case{cases.length !== 1 ? "s" : ""}
+              {displayList.length} of {cases.length} case{cases.length !== 1 ? "s" : ""}
             </p>
           </div>
         </>
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
-        {filtered.length === 0 ? (
+        {displayList.length === 0 ? (
           <p className="py-4 text-center text-xs text-muted-foreground">
             No cases match your filters.
           </p>
         ) : (
           <ul className="space-y-2">
-            {filtered.map((c) => {
+            {displayList.map((c) => {
               const isActive = c.id === currentCaseId;
               const cardClass = cn(
                 "block w-full rounded-lg border px-2.5 py-2 text-left transition-colors",

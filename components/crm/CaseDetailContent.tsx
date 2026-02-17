@@ -34,10 +34,16 @@ function DataField({
 }) {
   return (
     <div className={cn("flex flex-col gap-0.5", className)}>
-      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+      <span
+        className="font-medium uppercase tracking-wide text-muted-foreground"
+        style={{ fontSize: "var(--tally-font-size-xs)" }}
+      >
         {label}
       </span>
-      <span className="text-sm text-gray-900 dark:text-gray-100">
+      <span
+        className="text-gray-900 dark:text-gray-100"
+        style={{ fontSize: "var(--tally-font-size-sm)" }}
+      >
         {value || "—"}
       </span>
     </div>
@@ -68,12 +74,18 @@ export default function CaseDetailContent({
     <div className="min-w-0 w-full p-density-xl">
       <div className="mx-auto w-full min-w-0 max-w-[1400px]">
       {showBreadcrumbs && (
-        <nav className="mb-density-md flex items-center gap-1.5 text-sm text-muted-foreground">
+        <nav
+          className="mb-density-md flex items-center gap-1.5 text-muted-foreground"
+          style={{ fontSize: "var(--tally-font-size-sm)" }}
+        >
           <Link href="/crm/cases" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
             Cases
           </Link>
           <Icon name="chevron_right" size={14} />
-          <span className="font-medium text-gray-900 dark:text-gray-100">
+          <span
+            className="font-medium text-gray-900 dark:text-gray-100"
+            style={{ fontSize: "var(--tally-font-size-sm)" }}
+          >
             {caseItem.caseNumber}
           </span>
         </nav>
@@ -84,20 +96,32 @@ export default function CaseDetailContent({
         <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              <h1
+                className="font-bold text-gray-900 dark:text-gray-100"
+                style={{
+                  fontSize: "var(--tally-font-size-xl)",
+                  lineHeight: "var(--tally-line-height-tight)",
+                }}
+              >
                 {caseItem.caseNumber}
               </h1>
               <Badge
                 variant={priorityVariant[caseItem.priority]}
-                className="text-[10px]"
+                style={{ fontSize: "var(--tally-font-size-xs)" }}
               >
                 {caseItem.priority}
               </Badge>
-              <Badge variant="outline" className="text-[10px]">
+              <Badge
+                variant="outline"
+                style={{ fontSize: "var(--tally-font-size-xs)" }}
+              >
                 {caseItem.type}
               </Badge>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p
+              className="mt-1 text-muted-foreground"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
               {caseItem.subType} · {caseItem.accountName}
             </p>
           </div>
@@ -121,10 +145,16 @@ export default function CaseDetailContent({
           />
           <div className="flex shrink-0 items-center gap-4 border-border dark:border-gray-700 sm:border-l sm:pl-4">
             <div className="text-right">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              <p
+                className="font-medium uppercase tracking-wide text-muted-foreground"
+                style={{ fontSize: "var(--tally-font-size-xs)" }}
+              >
                 SLA Deadline
               </p>
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <p
+                className="font-medium text-gray-900 dark:text-gray-100"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
                 {caseItem.slaDeadline}
               </p>
             </div>
@@ -145,7 +175,8 @@ export default function CaseDetailContent({
             <select
               value={activeTab}
               onChange={(e) => setActiveTab(e.target.value)}
-              className="w-full cursor-pointer appearance-none rounded-lg border border-border bg-gray-100 py-2.5 pl-3 pr-9 text-sm font-medium text-gray-900 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              className="w-full cursor-pointer appearance-none rounded-lg border border-border bg-gray-100 py-2.5 pl-3 pr-9 font-medium text-gray-900 outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
             >
               <option value="request">Request Information</option>
               <option value="communications">
@@ -167,24 +198,28 @@ export default function CaseDetailContent({
           <TabsTrigger
             value="request"
             className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 dark:text-gray-300 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-gray-100"
+            style={{ fontSize: "var(--tally-font-size-sm)" }}
           >
             Request Information
           </TabsTrigger>
           <TabsTrigger
             value="communications"
             className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 dark:text-gray-300 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-gray-100"
+            style={{ fontSize: "var(--tally-font-size-sm)" }}
           >
             Communications ({caseItem.communications.length})
           </TabsTrigger>
           <TabsTrigger
             value="related"
             className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 dark:text-gray-300 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-gray-100"
+            style={{ fontSize: "var(--tally-font-size-sm)" }}
           >
             Related
           </TabsTrigger>
           <TabsTrigger
             value="history"
             className="text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 dark:text-gray-300 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-gray-100"
+            style={{ fontSize: "var(--tally-font-size-sm)" }}
           >
             History ({caseItem.activities.length})
           </TabsTrigger>
@@ -193,7 +228,10 @@ export default function CaseDetailContent({
         <TabsContent value="request" className="mt-0 w-full">
           <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-              <h3 className="mb-4 text-sm font-bold text-gray-900 dark:text-gray-100">
+              <h3
+                className="mb-4 font-bold text-gray-900 dark:text-gray-100"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
                 Case Details
               </h3>
               <div className="grid grid-cols-2 gap-4">
@@ -203,7 +241,10 @@ export default function CaseDetailContent({
                 <DataField
                   label="Priority"
                   value={
-                    <Badge variant={priorityVariant[caseItem.priority]} className="text-[10px]">
+                    <Badge
+                      variant={priorityVariant[caseItem.priority]}
+                      style={{ fontSize: "var(--tally-font-size-xs)" }}
+                    >
                       {caseItem.priority}
                     </Badge>
                   }
@@ -215,7 +256,10 @@ export default function CaseDetailContent({
               </div>
             </div>
             <div className="rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-              <h3 className="mb-4 text-sm font-bold text-gray-900 dark:text-gray-100">
+              <h3
+                className="mb-4 font-bold text-gray-900 dark:text-gray-100"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
                 Assignment
               </h3>
               <div className="grid grid-cols-2 gap-4">
@@ -231,6 +275,7 @@ export default function CaseDetailContent({
                         caseItem.slaStatus === "Breached" && "text-[#C40000]",
                         caseItem.slaStatus === "At Risk" && "text-[#C53B00]"
                       )}
+                      style={{ fontSize: "var(--tally-font-size-sm)" }}
                     >
                       {caseItem.slaTimeRemaining}
                     </span>
@@ -239,20 +284,38 @@ export default function CaseDetailContent({
               </div>
             </div>
             <div className="rounded-lg border border-border bg-white p-4 lg:col-span-2 dark:border-gray-700 dark:bg-gray-900">
-              <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-gray-100">
+              <h3
+                className="mb-3 font-bold text-gray-900 dark:text-gray-100"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
                 Description
               </h3>
-              <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+              <p
+                className="leading-relaxed text-gray-700 dark:text-gray-300"
+                style={{
+                  fontSize: "var(--tally-font-size-sm)",
+                  lineHeight: "var(--tally-line-height-relaxed)",
+                }}
+              >
                 {caseItem.description}
               </p>
             </div>
             {caseItem.resolution && (
               <div className="rounded-lg border border-[#008000]/20 bg-[#008000]/5 p-4 lg:col-span-2 dark:border-green-800/30 dark:bg-green-950/20">
-                <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-[#008000]">
+                <h3
+                  className="mb-3 flex items-center gap-1.5 font-bold text-[#008000]"
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                >
                   <Icon name="task_alt" size={16} />
                   Resolution
                 </h3>
-                <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                <p
+                  className="leading-relaxed text-gray-700 dark:text-gray-300"
+                  style={{
+                    fontSize: "var(--tally-font-size-sm)",
+                    lineHeight: "var(--tally-line-height-relaxed)",
+                  }}
+                >
                   {caseItem.resolution}
                 </p>
               </div>
@@ -264,7 +327,10 @@ export default function CaseDetailContent({
           <div className="w-full rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
             <CommunicationTimeline communications={caseItem.communications} />
             {caseItem.communications.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">
+              <p
+                className="py-8 text-center text-muted-foreground"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
                 No communications recorded for this case.
               </p>
             )}
@@ -277,7 +343,10 @@ export default function CaseDetailContent({
               <DocumentAttachments attachments={caseItem.attachments} />
             </div>
             <div className="rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-              <h3 className="mb-3 text-sm font-medium text-gray-900 dark:text-gray-100">
+              <h3
+                className="mb-3 font-medium text-gray-900 dark:text-gray-100"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
                 Contacts ({account.contacts.length})
               </h3>
               <div className="divide-y divide-border dark:divide-gray-700">
@@ -288,16 +357,26 @@ export default function CaseDetailContent({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        <p
+                          className="font-medium text-gray-900 dark:text-gray-100"
+                          style={{ fontSize: "var(--tally-font-size-sm)" }}
+                        >
                           {contact.name}
                         </p>
                         {contact.isPrimary && (
-                          <Badge variant="default" className="text-[9px] px-1.5 py-0">
+                          <Badge
+                            variant="default"
+                            className="px-1.5 py-0"
+                            style={{ fontSize: "var(--tally-font-size-xs)" }}
+                          >
                             Primary
                           </Badge>
                         )}
                       </div>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p
+                        className="text-muted-foreground"
+                        style={{ fontSize: "var(--tally-font-size-xs)" }}
+                      >
                         {contact.role} · {contact.email}
                       </p>
                     </div>
@@ -307,7 +386,10 @@ export default function CaseDetailContent({
             </div>
             <div className="rounded-lg border border-border bg-white p-4 lg:col-span-2 dark:border-gray-700 dark:bg-gray-900">
               <div className="mb-3 flex items-center justify-between gap-2">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <h3
+                  className="font-medium text-gray-900 dark:text-gray-100"
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                >
                   Related Cases (
                   {
                     relatedCaseNumbers.filter((caseNum) => {
@@ -341,7 +423,10 @@ export default function CaseDetailContent({
                           className="flex items-center gap-2 rounded border border-border px-3 py-2 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/60"
                         >
                           <Icon name="link" size={16} className="text-gray-400" />
-                          <span className="text-sm font-medium text-[#2C365D] dark:text-[#7c8cb8]">
+                          <span
+                            className="font-medium text-[#2C365D] dark:text-[#7c8cb8]"
+                            style={{ fontSize: "var(--tally-font-size-sm)" }}
+                          >
                             {linkedCase.caseNumber}
                           </span>
                         </Link>
@@ -349,7 +434,10 @@ export default function CaseDetailContent({
                     })}
                   </div>
                 ) : (
-                  <p className="py-4 text-center text-sm text-muted-foreground">
+                  <p
+                    className="py-4 text-center text-muted-foreground"
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  >
                     {onOpenLinkModal
                       ? "No related cases. Use \"Link case\" to add one from the same organisation."
                       : "No related cases in the same organisation."}
@@ -362,12 +450,18 @@ export default function CaseDetailContent({
 
         <TabsContent value="history" className="mt-0 w-full">
           <div className="w-full rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-            <h3 className="mb-4 text-sm font-bold text-gray-900 dark:text-gray-100">
+            <h3
+              className="mb-4 font-bold text-gray-900 dark:text-gray-100"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
               Activity History
             </h3>
             <ActivityTimeline activities={caseItem.activities} />
             {caseItem.activities.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted-foreground">
+              <p
+                className="py-8 text-center text-muted-foreground"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
                 No activity recorded for this case.
               </p>
             )}

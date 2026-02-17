@@ -17,7 +17,7 @@ import {
   getAllContactsWithAccount,
   getAccountById,
   getAccountsByOrgId,
-  mockAccounts,
+  getOrgById,
   mockOrgs,
   type ContactWithAccount,
 } from "@/lib/mock-data/accounts";
@@ -253,6 +253,7 @@ function NewContactModal({
 
 export default function ContactManagementPage() {
   const [search, setSearch] = React.useState("");
+  const [filterOrgId, setFilterOrgId] = React.useState("");
   const [modalOpen, setModalOpen] = React.useState(false);
   const [sortField, setSortField] = React.useState<ContactSortField>("name");
   const [sortDir, setSortDir] = React.useState<SortDirection>("asc");
@@ -265,6 +266,20 @@ export default function ContactManagementPage() {
     [localContacts]
   );
 
+  // One row per contact: pick primary account (where contact is primary) or first account
+  const uniqueContacts = React.useMemo(() => {
+    const byContact = new Map<string, ContactWithAccount>();
+    for (const cwa of contactsWithAccount) {
+      const existing = byContact.get(cwa.contact.id);
+      if (!existing) {
+        byContact.set(cwa.contact.id, cwa);
+      } else if (cwa.contact.isPrimary && !existing.contact.isPrimary) {
+        byContact.set(cwa.contact.id, cwa);
+      }
+    }
+    return Array.from(byContact.values());
+  }, [contactsWithAccount]);
+
   const handleSort = (field: ContactSortField) => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -275,24 +290,32 @@ export default function ContactManagementPage() {
   };
 
   const filtered = React.useMemo(() => {
-    let result = contactsWithAccount;
+    let result = uniqueContacts;
+    if (filterOrgId) {
+      result = result.filter((cwa) => cwa.account.orgId === filterOrgId);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
+      const orgName = (cwa: ContactWithAccount) =>
+        getOrgById(cwa.account.orgId)?.name?.toLowerCase() ?? "";
       result = result.filter(
         (cwa) =>
           cwa.contact.name.toLowerCase().includes(q) ||
           cwa.contact.email.toLowerCase().includes(q) ||
           cwa.account.name.toLowerCase().includes(q) ||
-          cwa.contact.role.toLowerCase().includes(q)
+          orgName(cwa).includes(q) ||
+          (cwa.contact.role || "").toLowerCase().includes(q)
       );
     }
     const dir = sortDir === "asc" ? 1 : -1;
     result = [...result].sort((a, b) => {
+      const orgA = getOrgById(a.account.orgId)?.name ?? "";
+      const orgB = getOrgById(b.account.orgId)?.name ?? "";
       switch (sortField) {
         case "name":
           return dir * a.contact.name.localeCompare(b.contact.name);
         case "org":
-          return dir * a.account.name.localeCompare(b.account.name);
+          return dir * orgA.localeCompare(orgB);
         case "role":
           return dir * (a.contact.role || "").localeCompare(b.contact.role || "");
         case "email":
@@ -304,7 +327,7 @@ export default function ContactManagementPage() {
       }
     });
     return result;
-  }, [contactsWithAccount, search, sortField, sortDir]);
+  }, [uniqueContacts, filterOrgId, search, sortField, sortDir]);
 
   const renderSortHeader = (
     field: ContactSortField,
@@ -354,6 +377,29 @@ export default function ContactManagementPage() {
             </p>
           </div>
           <div className="flex items-center gap-density-md">
+            <div className="relative">
+              <select
+                value={filterOrgId}
+                onChange={(e) => setFilterOrgId(e.target.value)}
+                className={cn(
+                  "h-10 min-w-[180px] cursor-pointer appearance-none rounded-density-md border border-border bg-white py-2 pl-3 pr-9 outline-none focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                )}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                aria-label="Filter by org"
+              >
+                <option value="">All orgs</option>
+                {mockOrgs.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+              <Icon
+                name="expand_more"
+                size={16}
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+            </div>
             <div className="relative w-64 min-w-[200px]">
               <Icon
                 name="search"
@@ -393,8 +439,10 @@ export default function ContactManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map(({ contact, account }: ContactWithAccount) => (
-                <TableRow key={`${account.id}-${contact.id}`}>
+              {filtered.map(({ contact, account }: ContactWithAccount) => {
+                const org = getOrgById(account.orgId);
+                return (
+                <TableRow key={contact.id}>
                   <TableCell>
                     <Link
                       href={`/crm/customer/contacts/${contact.id}`}
@@ -404,12 +452,16 @@ export default function ContactManagementPage() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link
-                      href={`/crm/customer/accounts/${account.id}`}
-                      className="text-muted-foreground hover:text-gray-900 dark:hover:text-gray-100"
-                    >
-                      {account.name}
-                    </Link>
+                    {org ? (
+                      <Link
+                        href={`/crm/customer/orgs/${org.id}`}
+                        className="text-muted-foreground hover:text-gray-900 dark:hover:text-gray-100"
+                      >
+                        {org.name}
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {contact.role || "—"}
@@ -430,7 +482,8 @@ export default function ContactManagementPage() {
                     </Link>
                   </TableCell>
                 </TableRow>
-              ))}
+              );
+              })}
             </TableBody>
           </Table>
           {filtered.length === 0 && (

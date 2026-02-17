@@ -25,10 +25,16 @@ function DataRow({
 }) {
   return (
     <div className={cn("flex flex-col gap-0.5", className)}>
-      <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+      <span
+        className="font-medium uppercase tracking-wide text-muted-foreground"
+        style={{ fontSize: "var(--tally-font-size-xs)" }}
+      >
         {label}
       </span>
-      <span className="text-xs text-gray-900 dark:text-gray-100">
+      <span
+        className="text-gray-900 dark:text-gray-100"
+        style={{ fontSize: "var(--tally-font-size-sm)" }}
+      >
         {value ?? "—"}
       </span>
     </div>
@@ -63,36 +69,46 @@ export default function ContactContextPanel({
       )}
     >
       {/* Header — avatar + name + email, Edit button */}
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2 dark:border-gray-800">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2C365D] text-[10px] font-bold text-white">
+      <div className="flex items-center gap-2 border-b border-border px-density-md py-density-sm dark:border-gray-800">
+        <div
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2C365D] font-bold text-white"
+          style={{ fontSize: "var(--tally-font-size-xs)" }}
+        >
           {initials}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-semibold text-gray-900 dark:text-gray-100">
+          <p
+            className="truncate font-semibold text-gray-900 dark:text-gray-100"
+            style={{ fontSize: "var(--tally-font-size-sm)" }}
+          >
             {contact.name}
           </p>
-          <p className="truncate text-[11px] text-muted-foreground" title={contact.email}>
+          <p
+            className="truncate text-muted-foreground"
+            title={contact.email}
+            style={{ fontSize: "var(--tally-font-size-xs)" }}
+          >
             {contact.email || "—"}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="h-7 shrink-0 gap-1 px-2 text-xs">
+        <Button variant="outline" size="sm" className="h-7 shrink-0 gap-1 px-2" style={{ fontSize: "var(--tally-font-size-xs)" }}>
           <Icon name="edit" size={14} />
           Edit
         </Button>
       </div>
 
       {/* Quick actions — separate section */}
-      <div className="border-b border-border px-3 py-2 dark:border-gray-800">
-        <div className="flex flex-wrap gap-1">
+      <div className="border-b border-border px-density-md py-density-sm dark:border-gray-800">
+        <div className="flex w-full justify-between">
           {QUICK_ACTIONS.map(({ label, icon }) => (
             <button
               key={label}
               type="button"
-              className="flex flex-col items-center gap-0.5 rounded p-1.5 text-muted-foreground transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+              className="flex flex-col items-center gap-0.5 rounded-density-sm p-1.5 text-muted-foreground transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100"
               title={label}
             >
               <Icon name={icon} size={18} />
-              <span className="text-[10px]">{label}</span>
+              <span style={{ fontSize: "var(--tally-font-size-xs)" }}>{label}</span>
             </button>
           ))}
         </div>
@@ -100,8 +116,11 @@ export default function ContactContextPanel({
 
       {/* Org — single full-width border below only (above = Quick actions' border-b) */}
       <div className="border-b border-border dark:border-gray-800">
-        <div className="px-3 py-3">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="px-density-md py-density-md">
+          <span
+            className="font-medium uppercase tracking-wide text-muted-foreground"
+            style={{ fontSize: "var(--tally-font-size-xs)" }}
+          >
             Org
           </span>
           {(() => {
@@ -109,20 +128,26 @@ export default function ContactContextPanel({
             return org ? (
               <Link
                 href="/crm/customer/orgs"
-                className="mt-1 block truncate text-sm font-medium text-[#006180] hover:underline dark:text-[#80E0FF]"
+                className="mt-1 block truncate font-medium text-[#006180] hover:underline dark:text-[#80E0FF]"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
               >
                 {org.name}
               </Link>
             ) : (
-              <p className="mt-1 truncate text-sm text-muted-foreground">—</p>
+              <p
+                className="mt-1 truncate text-muted-foreground"
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
+                —
+              </p>
             );
           })()}
         </div>
       </div>
 
       {/* Contact details — scrollable */}
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-3 py-2">
-        <div className="space-y-2.5 pl-0 pr-1">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-density-md py-density-sm">
+        <div className="flex flex-col gap-density-sm pl-0 pr-1">
           <DataRow label="Role" value={contact.role} />
           <DataRow label="Email" value={contact.email} />
           <DataRow label="Phone number" value={contact.phone} />

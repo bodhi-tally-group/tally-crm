@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 /* ─── Nav items ─────────────────────────────────────────────────────────── */
 
 const navItems: NavigationItem[] = [
+  { id: "home", label: "Home", icon: "home", href: "/crm" },
   { id: "cases", label: "Cases", icon: "inbox", href: "/crm/cases" },
   { id: "pipeline", label: "Pipeline", icon: "trending_up", href: "/crm/pipeline" },
   {
@@ -102,21 +103,23 @@ export default function CRMLayout({
   }, [profileOpen]);
 
   // Determine default active nav id from pathname
-  const defaultActiveId = pathname.startsWith("/crm/pipeline")
-    ? "pipeline"
-    : pathname.startsWith("/crm/customer/contacts")
-      ? "contact-management"
-      : pathname.startsWith("/crm/customer/accounts")
-        ? "account-management"
-        : pathname.startsWith("/crm/customer/orgs")
-          ? "org-management"
-          : pathname.startsWith("/crm/customer")
-            ? "customer-management"
-            : pathname.startsWith("/crm/cases")
-              ? "cases"
-              : pathname.startsWith("/crm/settings")
-                ? "settings"
-                : "cases-list";
+  const defaultActiveId = pathname === "/crm" || pathname === "/crm/"
+    ? "home"
+    : pathname.startsWith("/crm/pipeline")
+      ? "pipeline"
+      : pathname.startsWith("/crm/customer/contacts")
+        ? "contact-management"
+        : pathname.startsWith("/crm/customer/accounts")
+          ? "account-management"
+          : pathname.startsWith("/crm/customer/orgs")
+            ? "org-management"
+            : pathname.startsWith("/crm/customer")
+              ? "customer-management"
+              : pathname.startsWith("/crm/cases")
+                ? "cases"
+                : pathname.startsWith("/crm/settings")
+                  ? "settings"
+                  : "cases";
 
   return (
     <div className="flex h-screen min-w-0 flex-col overflow-hidden bg-[#F9F9FB] dark:bg-gray-900">
@@ -125,7 +128,7 @@ export default function CRMLayout({
       {/* ── App Bar ──────────────────────────────────────────────────── */}
       <header className="flex h-14 shrink-0 items-center border-b border-border bg-white px-4 dark:bg-gray-800">
         {/* Logo */}
-        <Link href="/crm/cases" className="mr-6 flex items-center">
+        <Link href="/crm" className="mr-6 flex items-center">
           <Image
             src="/Tally_CRM_Logo.svg"
             alt="Tally CRM"

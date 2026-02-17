@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tally CRM – Spec Compliance Report</title>
+  <style>
+    :root {
+      --brand: #00C1FF;
+      --brand-dark: #006180;
+      --navy: #2C365D;
+      --green: #16a34a;
+      --amber: #d97706;
+      --red: #dc2626;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-500: #6b7280;
+      --gray-700: #374151;
+      --gray-900: #111827;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--gray-900);
+      background: white;
+      line-height: 1.6;
+      padding: 0;
+    }
+
+    .brand-strip { height: 4px; background: var(--brand); }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 32px 64px;
+    }
+
+    .header {
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 4px;
+    }
+
+    .header .subtitle {
+      font-size: 15px;
+      color: var(--gray-500);
+    }
+
+    .meta {
+      display: flex;
+      gap: 32px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .meta strong { color: var(--gray-700); }
+
+    .summary-box {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 40px;
+    }
+
+    .summary-box h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 12px;
+    }
+
+    .summary-box p {
+      font-size: 14px;
+      color: var(--gray-700);
+      line-height: 1.7;
+    }
+
+    .summary-stats {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .stat {
+      flex: 1;
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat .number {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .stat .label {
+      font-size: 12px;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .stat.green .number { color: var(--green); }
+    .stat.amber .number { color: var(--amber); }
+    .stat.red .number { color: var(--red); }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy);
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin: 24px 0 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 10px 12px;
+      background: var(--gray-50);
+      border-bottom: 2px solid var(--gray-200);
+      font-weight: 600;
+      color: var(--gray-700);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: top;
+    }
+
+    tbody tr:hover { background: var(--gray-50); }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-covered { background: #dcfce7; color: #166534; }
+    .badge-partial { background: #fef3c7; color: #92400e; }
+    .badge-missing { background: #fee2e2; color: #991b1b; }
+    .badge-na { background: var(--gray-100); color: var(--gray-500); }
+
+    .inconsistencies {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+
+    .inconsistencies h3 {
+      color: #92400e;
+      margin-top: 0;
+    }
+
+    .inconsistencies ol {
+      padding-left: 20px;
+      font-size: 14px;
+      color: var(--gray-700);
+    }
+
+    .inconsistencies li { margin-bottom: 8px; }
+    .inconsistencies strong { color: var(--gray-900); }
+
+    .footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--gray-200);
+      font-size: 12px;
+      color: var(--gray-500);
+      text-align: center;
+    }
+
+    @media print {
+      body { padding: 0; }
+      .container { padding: 24px; max-width: 100%; }
+      .brand-strip { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .badge, .stat .number, thead th, .summary-box, .inconsistencies {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="brand-strip"></div>
+  <div class="container">
+
+    <div class="header">
+      <h1>Tally CRM – Spec Compliance Report</h1>
+      <p class="subtitle">Phase 1 Developer Specification vs Current Implementation</p>
+      <div class="meta">
+        <span><strong>Date:</strong> 12 February 2026</span>
+        <span><strong>Spec:</strong> Tally CRM Module (Phase 1)</span>
+        <span><strong>Repo:</strong> bodhi-tally-group/tally-crm</span>
+      </div>
+    </div>
+
+    <div class="summary-box">
+      <h2>Executive Summary</h2>
+      <p>
+        The current product is a <strong>frontend prototype / UI mockup</strong> built with Next.js 16, React 19, and Tailwind CSS.
+        It demonstrates the visual layout and navigation for most spec sections, covering roughly <strong>60–70% of the UI requirements</strong> (Section 7).
+        However, it covers <strong>0% of the backend requirements</strong> — there are no APIs, no database, no RBAC enforcement, no audit logging,
+        no SLA engine, and no integrations. All data is hardcoded mock arrays. Data model inconsistencies between pages should be resolved before backend implementation begins.
+      </p>
+      <div class="summary-stats">
+        <div class="stat green">
+          <div class="number">11</div>
+          <div class="label">Covered</div>
+        </div>
+        <div class="stat amber">
+          <div class="number">8</div>
+          <div class="label">Partial</div>
+        </div>
+        <div class="stat red">
+          <div class="number">14</div>
+          <div class="label">Missing</div>
+        </div>
+      </div>
+    </div>
+
+    <h2>UI Requirements – What's Covered</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Spec Requirement</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Opportunity list (kanban + list)</td>
+          <td><span class="badge badge-covered">Covered</span></td>
+          <td>Both views with toggle, drag-and-drop in kanban</td>
+        </tr>
+        <tr>
+          <td>Opportunity statuses (lead, open, won, lost, deferred)</td>
+          <td><span class="badge badge-covered">Covered</span></td>
+          <td>All 5 statuses present in mock data</td>
+        </tr>
+        <tr>
+          <td>Opportunity stages (configurable)</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>4 stages exist but Pipeline page uses a different set — inconsistent</td>
+        </tr>
+        <tr>
+          <td>Opportunity detail with stage history, activities, documents</td>
+          <td><span class="badge badge-covered">Covered</span></td>
+          <td>Tabs for Details, Activity, Documents with mock data</td>
+        </tr>
+        <tr>
+          <td>Contract artefact generation &amp; storage</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>Contracts page exists with KPI cards and table; "Generate" button has no logic</td>
+        </tr>
+        <tr>
+          <td>Manual confirmation of contract execution</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>"Awaiting Manual Confirmation" KPI shown; no workflow behind it</td>
+        </tr>
+        <tr>
+          <td>Case list with filters</td>
+          <td><span class="badge badge-covered">Covered</span></td>
+          <td>Filters for All/My/Unassigned, search, sort by priority/SLA/date</td>
+        </tr>
+        <tr>
+          <td>Case detail with timeline</td>
+          <td><span class="badge badge-covered">Covered</span></td>
+          <td>StatusProgressBar, communications tab, related items</td>
+        </tr>
+        <tr>
+          <td>Case communications</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>Communications page with quick actions; no SendGrid integration</td>
+        </tr>
+        <tr>
+          <td>SLA monitoring / performance</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>Performance page shows SLA metrics and breach counts — all hardcoded</td>
+        </tr>
+        <tr>
+          <td>Settings / admin configuration</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>Users, Roles, Permissions tabs have UI; 8 other config tabs are placeholders</td>
+        </tr>
+        <tr>
+          <td>Attachments with promotion to Tally Docs</td>
+          <td><span class="badge badge-partial">Partial</span></td>
+          <td>"Promoted to Tally Docs" KPI on Contracts page; no actual promotion flow</td>
+        </tr>
+        <tr>
+          <td>Dashboard with KPIs and charts</td>
+          <td><span class="badge badge-covered">Covered</span></td>
+          <td>Open cases, SLA compliance, pipeline value, charts, team workload</td>
+        </tr>
+        <tr>
+          <td>Activities: tasks, calls, meetings, notes</td>
+          <td><span class="badge badge-covered">Covered</span></td>
+          <td>Opportunity detail + communications page show all 4 types</td>
+        </tr>
+        <tr>
+          <td>Opportunity becomes read-only after account creation</td>
+          <td><span class="badge badge-covered">Covered</span></td>
+          <td>Detail page shows account creation logic gated on contracts_signed</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Backend &amp; System Requirements – What's Missing</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Spec Requirement</th>
+          <th>Status</th>
+          <th>Gap</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>API routes (~40+ endpoints, Appendix A)</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>Zero API routes exist. All data is hardcoded mock arrays.</td>
+        </tr>
+        <tr>
+          <td>Database / data model (15+ entities)</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>No schema, no migrations, no persistence layer.</td>
+        </tr>
+        <tr>
+          <td>RBAC enforcement</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>UI shows role/permission matrix but nothing is enforced at API or UI level.</td>
+        </tr>
+        <tr>
+          <td>Audit logging (Appendix C)</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>Placeholder tab only. Spec requires before/after JSON on every mutation.</td>
+        </tr>
+        <tr>
+          <td>SLA computation engine</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>Spec requires business-hours-aware SLA calculation; current values are static.</td>
+        </tr>
+        <tr>
+          <td>Case creation channels (email, form)</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>Only manual creation UI exists. No inbound email/form ingestion.</td>
+        </tr>
+        <tr>
+          <td>Account inference from email</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>Spec requires confidence-flagged matching; not implemented.</td>
+        </tr>
+        <tr>
+          <td>Tally Account Creation API integration</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>Opportunity detail shows UI but no actual API call.</td>
+        </tr>
+        <tr>
+          <td>SendGrid integration</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>No email sending capability.</td>
+        </tr>
+        <tr>
+          <td>Unassigned triage (auto-task)</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>Spec requires auto-created triage task when case has no owner.</td>
+        </tr>
+        <tr>
+          <td>Case tasks</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>Not present in case detail UI.</td>
+        </tr>
+        <tr>
+          <td>In-app multi-tab case handling</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>Single case view only.</td>
+        </tr>
+        <tr>
+          <td>Validation rules (Appendix B)</td>
+          <td><span class="badge badge-missing">Missing</span></td>
+          <td>New Opportunity modal has no field validation.</td>
+        </tr>
+        <tr>
+          <td>Error handling conventions (Appendix D)</td>
+          <td><span class="badge badge-na">N/A</span></td>
+          <td>No backend to apply error conventions to.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Data Inconsistencies to Resolve</h2>
+    <div class="inconsistencies">
+      <h3>⚠ Issues Requiring Attention</h3>
+      <ol>
+        <li>
+          <strong>Pipeline vs Opportunities duplication</strong> — The spec describes one Opportunity entity, but the app has both
+          an Opportunities page and a separate Pipeline page with <strong>different stages and different mock data</strong>.
+          Opportunities uses: Initial, Qualification, Proposal, Contract.
+          Pipeline uses: Discovery, Qualification, Proposal, Negotiation, Closed Won, Closed Lost.
+          The spec doesn't call for two separate views with different stage definitions.
+        </li>
+        <li>
+          <strong>Case statuses mismatch</strong> — Spec requires: <code>new, in_progress, on_hold, waiting_customer,
+          waiting_3rd_party, resolved, closed</code>. The UI uses: <code>New, In Progress, Pending, Resolved, Closed</code>
+          — missing <code>on_hold</code>, <code>waiting_customer</code>, <code>waiting_3rd_party</code>, and using
+          <code>Pending</code> which isn't in the spec.
+        </li>
+        <li>
+          <strong>Credit check / risk scoring fields</strong> — Spec requires stub fields (<code>risk_score</code>,
+          <code>credit_check_status</code>) on Opportunity. Not present in the UI or mock data.
+        </li>
+      </ol>
+    </div>
+
+    <h2>Recommended Next Steps</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Action</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Resolve Pipeline vs Opportunities page duplication and unify stage definitions</td>
+          <td><span class="badge badge-missing">High</span></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Align case statuses to spec (add on_hold, waiting_customer, waiting_3rd_party)</td>
+          <td><span class="badge badge-missing">High</span></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Schema &amp; migrations — implement the 15+ entity data model</td>
+          <td><span class="badge badge-missing">High</span></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>RBAC + audit middleware (spec Section 3)</td>
+          <td><span class="badge badge-missing">High</span></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Case core + SLA engine with business hours support</td>
+          <td><span class="badge badge-missing">High</span></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>API routes for Appendix A endpoints</td>
+          <td><span class="badge badge-missing">High</span></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>Wire existing UI to real APIs (replace mock data)</td>
+          <td><span class="badge badge-partial">Medium</span></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>Add case tasks UI and multi-tab case handling</td>
+          <td><span class="badge badge-partial">Medium</span></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td>Complete Settings admin tabs (Opportunity Stages, Case Types, SLA Policies, etc.)</td>
+          <td><span class="badge badge-partial">Medium</span></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td>SendGrid integration for outbound case communications</td>
+          <td><span class="badge badge-partial">Medium</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="footer">
+      Tally CRM Spec Compliance Report &middot; Generated 12 February 2026 &middot; Confidential
+    </div>
+
+  </div>
+</body>
+</html>

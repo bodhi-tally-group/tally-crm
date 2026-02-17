@@ -265,11 +265,7 @@ export default function OrgManagementPage() {
                   <TableRow key={org.id}>
                     <TableCell>
                       <Link
-                        href={
-                          firstAccount
-                            ? `/crm/customer/accounts/${firstAccount.id}`
-                            : "/crm/customer/orgs"
-                        }
+                        href={`/crm/customer/orgs/${org.id}`}
                         className="font-medium text-[#006180] hover:underline dark:text-[#80E0FF]"
                       >
                         {org.name}
@@ -308,15 +304,13 @@ export default function OrgManagementPage() {
                       {totalContacts}
                     </TableCell>
                     <TableCell>
-                      {firstAccount && (
-                        <Link
-                          href={`/crm/customer/accounts/${firstAccount.id}`}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
-                          aria-label={`Open ${org.name}`}
-                        >
-                          <Icon name="chevron_right" size={18} />
-                        </Link>
-                      )}
+                      <Link
+                        href={`/crm/customer/orgs/${org.id}`}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+                        aria-label={`Open ${org.name}`}
+                      >
+                        <Icon name="chevron_right" size={18} />
+                      </Link>
                     </TableCell>
                   </TableRow>
                 );
