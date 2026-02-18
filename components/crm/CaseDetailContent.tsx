@@ -54,6 +54,8 @@ interface CaseDetailContentProps {
   caseItem: CaseItem;
   account: Account;
   showBreadcrumbs?: boolean;
+  /** When true, show an "Open in full page" control next to Assign (e.g. in tab view) */
+  showOpenInFullPage?: boolean;
   /** When set, used for Related tab and allows linking (from overrides store) */
   relatedCaseNumbers?: string[];
   /** Callback to open the link-case modal */
@@ -64,6 +66,7 @@ export default function CaseDetailContent({
   caseItem,
   account,
   showBreadcrumbs = true,
+  showOpenInFullPage = false,
   relatedCaseNumbers: relatedCaseNumbersProp,
   onOpenLinkModal,
 }: CaseDetailContentProps) {
@@ -125,7 +128,7 @@ export default function CaseDetailContent({
               {caseItem.subType} · {caseItem.accountName}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-start gap-2">
             <Button variant="outline" size="md" className="gap-1.5">
               <Icon name="edit" size="var(--tally-icon-size-sm)" />
               Edit
@@ -134,6 +137,16 @@ export default function CaseDetailContent({
               <Icon name="person_add" size="var(--tally-icon-size-sm)" />
               Assign
             </Button>
+            {showOpenInFullPage && (
+              <Link
+                href={`/crm/cases/${caseItem.id}`}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+                aria-label="Open case in full page"
+                title="Open in full page"
+              >
+                <Icon name="open_in_new" size={20} />
+              </Link>
+            )}
           </div>
         </div>
 

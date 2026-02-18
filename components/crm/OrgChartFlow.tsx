@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ReactFlow,
   Background,
+  BackgroundVariant,
   Controls,
   Handle,
   type Node,
@@ -376,7 +377,7 @@ export default function OrgChartFlow({
         proOptions={{ hideAttribution: true }}
         className="rounded-lg"
       >
-        <Background variant="dots" gap={16} size={1} className="text-gray-200 dark:text-gray-700" />
+        <Background variant={BackgroundVariant.Dots} gap={16} size={1} className="text-gray-200 dark:text-gray-700" />
         <Controls className="rounded-md border border-border bg-white shadow dark:border-gray-600 dark:bg-gray-800" />
       </ReactFlow>
     </div>

@@ -459,6 +459,7 @@ export default function CaseListPage() {
                         caseItem={caseItem}
                         account={account}
                         showBreadcrumbs={false}
+                        showOpenInFullPage
                         relatedCaseNumbers={relatedCaseNumbers}
                         onOpenLinkModal={() => setLinkModalOpen(true)}
                       />
