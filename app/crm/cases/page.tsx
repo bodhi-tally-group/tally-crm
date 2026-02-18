@@ -25,6 +25,9 @@ import NewCaseModal from "@/components/crm/NewCaseModal";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/Tooltip/Tooltip";
 import { useCaseLinksOverrides } from "@/lib/case-links-overrides";
 import type { CaseItem, CasePriority, CaseStatus, CaseType } from "@/types/crm";
+
+const useDatabase = () =>
+  typeof window !== "undefined" && process.env.NEXT_PUBLIC_USE_DATABASE === "true";
 type ViewMode = "kanban" | "list" | "tab";
 
 const CASE_STATUSES: CaseStatus[] = [
@@ -94,13 +97,60 @@ const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outl
   Low: "outline",
 };
 
+/** Parse DD/MM/YYYY (en-AU) to timestamp for sorting; fallback to NaN if invalid */
+function parseCreatedDate(s: string): number {
+  const parts = s.trim().split("/");
+  if (parts.length !== 3) return NaN;
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const year = parseInt(parts[2], 10);
+  if (Number.isNaN(day) || Number.isNaN(month) || Number.isNaN(year)) return NaN;
+  const d = new Date(year, month, day);
+  return Number.isNaN(d.getTime()) ? NaN : d.getTime();
+}
+
 export default function CaseListPage() {
   const [viewMode, setViewMode] = React.useState<ViewMode>("list");
   const [tabViewSelectedCaseId, setTabViewSelectedCaseId] = React.useState<string | null>(null);
   const [listView, setListView] = React.useState<ListViewId>("my");
   const kanbanRef = React.useRef<HTMLDivElement>(null);
-  const [cases, setCases] = React.useState(mockCases);
+  const [cases, setCases] = React.useState<CaseItem[]>(mockCases);
+  const [casesLoading, setCasesLoading] = React.useState(false);
   const [modalOpen, setModalOpen] = React.useState(false);
+  const useDb = useDatabase();
+
+  React.useEffect(() => {
+    if (!useDb) return;
+    setCasesLoading(true);
+    fetch("/api/cases")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setCases(Array.isArray(data) ? data : []))
+      .catch(() => setCases([]))
+      .finally(() => setCasesLoading(false));
+  }, [useDb]);
+
+  const refetchCases = React.useCallback(() => {
+    if (!useDb) return;
+    setCasesLoading(true);
+    fetch("/api/cases")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => setCases(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setCasesLoading(false));
+  }, [useDb]);
+
+  const createCaseViaApi = React.useCallback(
+    (caseData: CaseItem) =>
+      fetch("/api/cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(caseData),
+      }).then((r) => {
+        if (!r.ok) throw new Error("Create failed");
+        return r.json() as Promise<CaseItem>;
+      }),
+    []
+  );
   const [accountFilter, setAccountFilter] = React.useState("");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortField, setSortField] = React.useState<SortField>("createdDate");
@@ -129,15 +179,30 @@ export default function CaseListPage() {
   }, [viewMode]);
 
   const accountNames = React.useMemo(
-    () => Array.from(new Set(mockCases.map((c) => c.accountName))).sort(),
-    []
+    () => Array.from(new Set(cases.map((c) => c.accountName))).sort(),
+    [cases]
   );
 
-  const handleDrop = (caseId: string, newStatus: CaseStatus) => {
-    setCases((prev) =>
-      prev.map((c) => (c.id === caseId ? { ...c, status: newStatus } : c))
-    );
-  };
+  const handleDrop = React.useCallback(
+    (caseId: string, newStatus: CaseStatus) => {
+      if (useDb) {
+        fetch(`/api/cases/${caseId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((updated) => {
+            if (updated) setCases((prev) => prev.map((c) => (c.id === caseId ? updated : c)));
+          });
+      } else {
+        setCases((prev) =>
+          prev.map((c) => (c.id === caseId ? { ...c, status: newStatus } : c))
+        );
+      }
+    },
+    [useDb]
+  );
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -208,7 +273,12 @@ export default function CaseListPage() {
           return dir * ((slaOrder[a.slaStatus] ?? 99) - (slaOrder[b.slaStatus] ?? 99));
         case "owner":
           return dir * a.owner.localeCompare(b.owner);
-        case "createdDate":
+        case "createdDate": {
+          const ta = parseCreatedDate(a.createdDate);
+          const tb = parseCreatedDate(b.createdDate);
+          if (!Number.isNaN(ta) && !Number.isNaN(tb)) return dir * (ta - tb);
+          return dir * a.createdDate.localeCompare(b.createdDate);
+        }
         default:
           return dir * a.createdDate.localeCompare(b.createdDate);
       }
@@ -446,6 +516,27 @@ export default function CaseListPage() {
                   );
                 }
                 const relatedCaseNumbers = getRelatedCases(caseItem.id);
+                const handleTabUpdate = (payload: Partial<CaseItem>) =>
+                  fetch(`/api/cases/${caseItem.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                  }).then((r) => {
+                    if (!r.ok) return;
+                    return r.json().then((updated: CaseItem) =>
+                      setCases((prev) => prev.map((c) => (c.id === caseItem.id ? updated : c)))
+                    );
+                  });
+                const handleTabDelete = () => {
+                  if (!confirm("Delete this case? This cannot be undone.")) return;
+                  fetch(`/api/cases/${caseItem.id}`, { method: "DELETE" }).then((r) => {
+                    if (r.ok) {
+                      setCases((prev) => prev.filter((c) => c.id !== caseItem.id));
+                      const remaining = filtered.filter((c) => c.id !== caseItem.id);
+                      setTabViewSelectedCaseId(remaining[0]?.id ?? null);
+                    }
+                  });
+                };
                 return (
                   <>
                     <AccountContextPanel
@@ -462,6 +553,8 @@ export default function CaseListPage() {
                         showOpenInFullPage
                         relatedCaseNumbers={relatedCaseNumbers}
                         onOpenLinkModal={() => setLinkModalOpen(true)}
+                        onUpdateCase={useDb ? handleTabUpdate : undefined}
+                        onDeleteCase={useDb ? handleTabDelete : undefined}
                       />
                     </div>
                     <LinkCaseModal
@@ -575,7 +668,7 @@ export default function CaseListPage() {
                 {filtered.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
-                      No cases match your filters.
+                      {casesLoading ? "Loading cases…" : "No cases match your filters."}
                     </TableCell>
                   </TableRow>
                 )}
@@ -608,8 +701,10 @@ export default function CaseListPage() {
           onClose={() => setModalOpen(false)}
           onCreate={(newCase) => {
             setCases((prev) => [newCase, ...prev]);
+            setModalOpen(false);
           }}
           caseCount={cases.length}
+          createViaApi={useDb ? createCaseViaApi : undefined}
         />
       )}
     </div>

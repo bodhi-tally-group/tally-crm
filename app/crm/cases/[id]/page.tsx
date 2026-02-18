@@ -1,23 +1,111 @@
 "use client";
 
 import React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { getCaseById, mockCases } from "@/lib/mock-data/cases";
 import { getAccountById } from "@/lib/mock-data/accounts";
 import { useCaseLinksOverrides } from "@/lib/case-links-overrides";
 import AccountContextPanel from "@/components/crm/AccountContextPanel";
 import CaseDetailContent from "@/components/crm/CaseDetailContent";
 import LinkCaseModal from "@/components/crm/LinkCaseModal";
+import type { CaseItem } from "@/types/crm";
+
+const useDatabase = () =>
+  typeof window !== "undefined" && process.env.NEXT_PUBLIC_USE_DATABASE === "true";
 
 export default function CaseDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const caseId = params.id as string;
   const [linkModalOpen, setLinkModalOpen] = React.useState(false);
+  const [caseItem, setCaseItem] = React.useState<CaseItem | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [notFound, setNotFound] = React.useState(false);
+  const [relatedCasesMap, setRelatedCasesMap] = React.useState<Map<string, CaseItem>>(new Map());
+  const useDb = useDatabase();
   const { getRelatedCases, addLink } = useCaseLinksOverrides();
 
-  const caseItem = getCaseById(caseId) ?? mockCases[0];
+  React.useEffect(() => {
+    if (!useDb) {
+      const c = getCaseById(caseId) ?? mockCases[0];
+      setCaseItem(c);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setNotFound(false);
+    fetch(`/api/cases/${caseId}`)
+      .then((r) => {
+        if (r.status === 404) {
+          setNotFound(true);
+          return null;
+        }
+        return r.ok ? r.json() : null;
+      })
+      .then((data) => {
+        setCaseItem(data ?? null);
+      })
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
+  }, [caseId, useDb]);
+
+  const handleDelete = React.useCallback(() => {
+    if (!useDb || !caseId) return;
+    if (!confirm("Delete this case? This cannot be undone.")) return;
+    fetch(`/api/cases/${caseId}`, { method: "DELETE" }).then((r) => {
+      if (r.ok) router.push("/crm/cases");
+    });
+  }, [useDb, caseId, router]);
+
+  const handleUpdate = React.useCallback(
+    (payload: Partial<CaseItem>) => {
+      if (!useDb || !caseId) return Promise.resolve();
+      return fetch(`/api/cases/${caseId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }).then((r) => {
+        if (r.ok) return r.json().then(setCaseItem);
+      });
+    },
+    [useDb, caseId]
+  );
+
+  const relatedCaseNumbers = caseItem ? getRelatedCases(caseItem.id) : [];
+  React.useEffect(() => {
+    if (!useDb || relatedCaseNumbers.length === 0) {
+      setRelatedCasesMap(new Map());
+      return;
+    }
+    const map = new Map<string, CaseItem>();
+    Promise.all(
+      relatedCaseNumbers.map((num) =>
+        fetch(`/api/cases?caseNumber=${encodeURIComponent(num)}`)
+          .then((r) => (r.ok ? r.json() : []))
+          .then((arr: CaseItem[]) => {
+            if (Array.isArray(arr) && arr[0]) map.set(num, arr[0]);
+          })
+      )
+    ).then(() => setRelatedCasesMap(map));
+  }, [useDb, relatedCaseNumbers.join(",")]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Loading case…</p>
+      </div>
+    );
+  }
+  if (notFound || !caseItem) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Case not found.</p>
+      </div>
+    );
+  }
+
   const account = getAccountById(caseItem.accountId);
-  const relatedCaseNumbers = getRelatedCases(caseItem.id);
+  const relatedCaseNumbersList = getRelatedCases(caseItem.id);
 
   if (!account) {
     return (
@@ -31,9 +119,10 @@ export default function CaseDetailPage() {
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
       <AccountContextPanel
         account={account}
-        linkedCaseNumbers={relatedCaseNumbers}
+        linkedCaseNumbers={relatedCaseNumbersList}
         currentCaseId={caseItem.id}
         onOpenLinkModal={() => setLinkModalOpen(true)}
+        relatedCasesMap={useDb ? relatedCasesMap : undefined}
       />
 
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto">
@@ -41,8 +130,11 @@ export default function CaseDetailPage() {
           caseItem={caseItem}
           account={account}
           showBreadcrumbs
-          relatedCaseNumbers={relatedCaseNumbers}
+          relatedCaseNumbers={relatedCaseNumbersList}
           onOpenLinkModal={() => setLinkModalOpen(true)}
+          onUpdateCase={useDb ? handleUpdate : undefined}
+          onDeleteCase={useDb ? handleDelete : undefined}
+          relatedCasesMap={useDb ? relatedCasesMap : undefined}
         />
       </div>
 
@@ -51,7 +143,7 @@ export default function CaseDetailPage() {
         onOpenChange={setLinkModalOpen}
         currentCaseId={caseItem.id}
         account={account}
-        existingRelatedCaseNumbers={relatedCaseNumbers}
+        existingRelatedCaseNumbers={relatedCaseNumbersList}
         onSelectCase={(caseNumber) => addLink(caseItem.id, caseNumber)}
       />
     </div>

@@ -2,11 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Button from "@/components/Button/Button";
 import NewCaseModal from "@/components/crm/NewCaseModal";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 import { mockCases } from "@/lib/mock-data/cases";
+import type { CaseItem } from "@/types/crm";
+
+const useDatabase = () =>
+  typeof window !== "undefined" && process.env.NEXT_PUBLIC_USE_DATABASE === "true";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -48,10 +53,25 @@ const mockTasksCompleted = [
 // ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function CRMHomePage() {
+  const router = useRouter();
   const [taskFilter, setTaskFilter] = React.useState<"open" | "completed">("open");
   const [newCaseModalOpen, setNewCaseModalOpen] = React.useState(false);
+  const useDb = useDatabase();
   const greeting = getGreeting();
   const displayName = "John"; // From user John Smith; could come from auth/session
+
+  const createCaseViaApi = React.useCallback(
+    (caseData: CaseItem) =>
+      fetch("/api/cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(caseData),
+      }).then((r) => {
+        if (!r.ok) throw new Error("Create failed");
+        return r.json() as Promise<CaseItem>;
+      }),
+    []
+  );
 
   return (
     <div className="min-w-0 flex-1 overflow-y-auto">
@@ -219,8 +239,12 @@ export default function CRMHomePage() {
         {newCaseModalOpen && (
           <NewCaseModal
             onClose={() => setNewCaseModalOpen(false)}
-            onCreate={() => setNewCaseModalOpen(false)}
+            onCreate={(newCase) => {
+              setNewCaseModalOpen(false);
+              if (useDb && newCase?.id) router.push(`/crm/cases/${newCase.id}`);
+            }}
             caseCount={mockCases.length}
+            createViaApi={useDb ? createCaseViaApi : undefined}
           />
         )}
       </div>

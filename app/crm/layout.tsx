@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils";
 const navItems: NavigationItem[] = [
   { id: "home", label: "Home", icon: "home", href: "/crm" },
   { id: "cases", label: "Cases", icon: "inbox", href: "/crm/cases" },
-  { id: "pipeline", label: "Pipeline", icon: "trending_up", href: "/crm/pipeline" },
+  // Pipeline hidden for now; will be re-enabled later
+  // { id: "pipeline", label: "Pipeline", icon: "trending_up", href: "/crm/pipeline" },
   {
     id: "customer-management",
     label: "Customer Management",
@@ -105,8 +106,8 @@ export default function CRMLayout({
   // Determine default active nav id from pathname
   const defaultActiveId = pathname === "/crm" || pathname === "/crm/"
     ? "home"
-    : pathname.startsWith("/crm/pipeline")
-      ? "pipeline"
+    : pathname.startsWith("/crm/changelog")
+      ? "home"
       : pathname.startsWith("/crm/customer/contacts")
         ? "contact-management"
         : pathname.startsWith("/crm/customer/accounts")
@@ -127,25 +128,34 @@ export default function CRMLayout({
       <div className="h-1 shrink-0 bg-[#00C1FF]" />
       {/* ── App Bar ──────────────────────────────────────────────────── */}
       <header className="flex h-14 shrink-0 items-center border-b border-border bg-white px-4 dark:bg-gray-800">
-        {/* Logo */}
-        <Link href="/crm" className="mr-6 flex items-center">
-          <Image
-            src="/Tally_CRM_Logo.svg"
-            alt="Tally CRM"
-            width={140}
-            height={40}
-            className="block h-8 w-auto dark:hidden"
-            priority
-          />
-          <Image
-            src="/Tally_CRM_Logo_dark.svg"
-            alt="Tally CRM"
-            width={140}
-            height={40}
-            className="hidden h-8 w-auto dark:block"
-            priority
-          />
-        </Link>
+        {/* Logo + version */}
+        <div className="mr-6 flex items-center gap-3">
+          <Link href="/crm" className="flex items-center">
+            <Image
+              src="/Tally_CRM_Logo.svg"
+              alt="Tally CRM"
+              width={140}
+              height={40}
+              className="block h-8 w-auto dark:hidden"
+              priority
+            />
+            <Image
+              src="/Tally_CRM_Logo_dark.svg"
+              alt="Tally CRM"
+              width={140}
+              height={40}
+              className="hidden h-8 w-auto dark:block"
+              priority
+            />
+          </Link>
+          <Link
+            href="/crm/changelog"
+            className="text-muted-foreground hover:text-[#2C365D] hover:underline dark:hover:text-[#7c8cb8]"
+            style={{ fontSize: "var(--tally-font-size-xs)" }}
+          >
+            Version 0.1
+          </Link>
+        </div>
 
         {/* Search */}
         <div className="mx-auto flex w-full max-w-md items-center gap-2 rounded-density-md border border-border bg-gray-50 px-3 dark:bg-gray-700">

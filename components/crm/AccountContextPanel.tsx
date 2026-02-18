@@ -8,7 +8,7 @@ import Badge from "@/components/Badge/Badge";
 import SLAIndicator from "@/components/crm/SLAIndicator";
 import { getCaseByCaseNumber } from "@/lib/mock-data/cases";
 import { getAccountById } from "@/lib/mock-data/accounts";
-import type { Account } from "@/types/crm";
+import type { Account, CaseItem } from "@/types/crm";
 
 interface AccountContextPanelProps {
   account: Account;
@@ -18,6 +18,8 @@ interface AccountContextPanelProps {
   currentCaseId?: string;
   /** Callback to open the link-case modal */
   onOpenLinkModal?: () => void;
+  /** When set (e.g. DB mode), resolve case numbers to CaseItem for links */
+  relatedCasesMap?: Map<string, CaseItem>;
   className?: string;
 }
 
@@ -57,8 +59,10 @@ export default function AccountContextPanel({
   linkedCaseNumbers = [],
   currentCaseId,
   onOpenLinkModal,
+  relatedCasesMap,
   className,
 }: AccountContextPanelProps) {
+  const resolveCase = (caseNum: string) => relatedCasesMap?.get(caseNum) ?? getCaseByCaseNumber(caseNum);
   const accountTypeVariant =
     account.type === "Industrial"
       ? "default"
@@ -259,7 +263,7 @@ export default function AccountContextPanel({
                 </div>
                 {(() => {
                   const linkedCasesSameOrg = linkedCaseNumbers
-                    .map((caseNum) => getCaseByCaseNumber(caseNum))
+                    .map((caseNum) => resolveCase(caseNum))
                     .filter((c): c is NonNullable<typeof c> => c != null)
                     .filter((linkedCase) => getAccountById(linkedCase.accountId)?.orgId === account.orgId);
                   if (linkedCasesSameOrg.length === 0 && !onOpenLinkModal) return null;

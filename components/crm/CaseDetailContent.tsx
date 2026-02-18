@@ -14,7 +14,9 @@ import ActivityTimeline from "@/components/crm/ActivityTimeline";
 import DocumentAttachments from "@/components/crm/DocumentAttachments";
 import { getCaseByCaseNumber } from "@/lib/mock-data/cases";
 import { getAccountById } from "@/lib/mock-data/accounts";
-import type { Account, CaseItem, CasePriority, Contact } from "@/types/crm";
+import type { Account, CaseItem, CasePriority, CaseStatus, Contact } from "@/types/crm";
+
+const CASE_STATUSES: CaseStatus[] = ["New", "In Progress", "Pending", "Resolved", "Closed"];
 
 const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline"> = {
   Critical: "error",
@@ -60,6 +62,12 @@ interface CaseDetailContentProps {
   relatedCaseNumbers?: string[];
   /** Callback to open the link-case modal */
   onOpenLinkModal?: () => void;
+  /** When set (e.g. DB mode), updates are persisted via API */
+  onUpdateCase?: (payload: Partial<CaseItem>) => void | Promise<void>;
+  /** When set (e.g. DB mode), show Delete button and call this on confirm */
+  onDeleteCase?: () => void | Promise<void>;
+  /** When set (e.g. DB mode), resolve related case numbers to CaseItem for links */
+  relatedCasesMap?: Map<string, CaseItem>;
 }
 
 export default function CaseDetailContent({
@@ -69,9 +77,15 @@ export default function CaseDetailContent({
   showOpenInFullPage = false,
   relatedCaseNumbers: relatedCaseNumbersProp,
   onOpenLinkModal,
+  onUpdateCase,
+  onDeleteCase,
+  relatedCasesMap,
 }: CaseDetailContentProps) {
+  const resolveCase = (caseNum: string) => relatedCasesMap?.get(caseNum) ?? getCaseByCaseNumber(caseNum);
   const relatedCaseNumbers = relatedCaseNumbersProp ?? caseItem.relatedCases;
   const [activeTab, setActiveTab] = React.useState("request");
+  const [statusEditOpen, setStatusEditOpen] = React.useState(false);
+  const [updating, setUpdating] = React.useState(false);
 
   return (
     <div className="min-w-0 w-full p-density-xl">
@@ -129,14 +143,34 @@ export default function CaseDetailContent({
             </p>
           </div>
           <div className="flex shrink-0 items-start gap-2">
-            <Button variant="outline" size="md" className="gap-1.5">
-              <Icon name="edit" size="var(--tally-icon-size-sm)" />
-              Edit
-            </Button>
+            {onUpdateCase && (
+              <Button
+                variant="outline"
+                size="md"
+                className="gap-1.5"
+                disabled={updating}
+                onClick={() => setStatusEditOpen((v) => !v)}
+              >
+                <Icon name="edit" size="var(--tally-icon-size-sm)" />
+                Edit
+              </Button>
+            )}
             <Button variant="outline" size="md" className="gap-1.5">
               <Icon name="person_add" size="var(--tally-icon-size-sm)" />
               Assign
             </Button>
+            {onDeleteCase && (
+              <Button
+                variant="outline"
+                size="md"
+                className="gap-1.5 text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/30"
+                disabled={updating}
+                onClick={() => onDeleteCase()}
+              >
+                <Icon name="delete" size="var(--tally-icon-size-sm)" />
+                Delete
+              </Button>
+            )}
             {showOpenInFullPage && (
               <Link
                 href={`/crm/cases/${caseItem.id}`}
@@ -149,6 +183,35 @@ export default function CaseDetailContent({
             )}
           </div>
         </div>
+
+        {/* Inline status edit (when onUpdateCase and statusEditOpen) */}
+        {onUpdateCase && statusEditOpen && (
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</span>
+            <select
+              id="case-status-edit"
+              defaultValue={caseItem.status}
+              className="rounded-md border border-border bg-white px-3 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+              onChange={(e) => {
+                const newStatus = e.target.value as CaseStatus;
+                setUpdating(true);
+                Promise.resolve(onUpdateCase({ status: newStatus })).finally(() => {
+                  setUpdating(false);
+                  setStatusEditOpen(false);
+                });
+              }}
+            >
+              {CASE_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+            <Button variant="outline" size="sm" onClick={() => setStatusEditOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        )}
 
         {/* Status bar and SLA */}
         <div className="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
@@ -406,7 +469,7 @@ export default function CaseDetailContent({
                   Related Cases (
                   {
                     relatedCaseNumbers.filter((caseNum) => {
-                      const c = getCaseByCaseNumber(caseNum);
+                      const c = resolveCase(caseNum);
                       return c && getAccountById(c.accountId)?.orgId === account.orgId;
                     }).length
                   }
@@ -421,13 +484,13 @@ export default function CaseDetailContent({
               </div>
               {(() => {
                 const relatedSameOrg = relatedCaseNumbers.filter((caseNum) => {
-                  const c = getCaseByCaseNumber(caseNum);
+                  const c = resolveCase(caseNum);
                   return c != null && getAccountById(c.accountId)?.orgId === account.orgId;
                 });
                 return relatedSameOrg.length > 0 ? (
                   <div className="space-y-2">
                     {relatedSameOrg.map((caseNum) => {
-                      const linkedCase = getCaseByCaseNumber(caseNum);
+                      const linkedCase = resolveCase(caseNum);
                       if (!linkedCase) return null;
                       return (
                         <Link

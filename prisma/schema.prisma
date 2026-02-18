@@ -1,0 +1,39 @@
+// Tally CRM — SQLite for local case persistence (create/edit/delete journeys).
+// On Vercel, leave DATABASE_URL unset to use mock data.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Case {
+  id               String   @id @default(cuid())
+  caseNumber       String   @unique
+  accountId        String
+  accountName      String
+  type             String   // CaseType: Complaint | Enquiry | EWR | Onboarding | Dunning
+  subType          String
+  status           String   // CaseStatus: New | In Progress | Pending | Resolved | Closed
+  priority         String   // CasePriority: Critical | High | Medium | Low
+  slaStatus        String   // SLAStatus: On Track | At Risk | Breached
+  slaDeadline      String
+  slaTimeRemaining String
+  owner            String
+  team             String
+  createdDate      String
+  updatedDate      String
+  description      String
+  resolution       String
+  // Stored as JSON; app serializes/deserializes to match CaseItem shape
+  communications   String?  // JSON array of Communication
+  activities       String?  // JSON array of Activity
+  attachments      String?  // JSON array of Attachment
+  relatedCases     String?  // JSON array of case numbers (string[])
+  pendingReason    String?  // "Customer" | "3rd Party" | "On Hold" when status is Pending
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

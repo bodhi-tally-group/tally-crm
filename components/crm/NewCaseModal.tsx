@@ -4,7 +4,7 @@ import React from "react";
 import Button from "@/components/Button/Button";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
-import { mockAccounts } from "@/lib/mock-data/accounts";
+import { mockAccounts, mockOrgs } from "@/lib/mock-data/accounts";
 import {
   CASE_TYPE_GROUPS,
   CASE_GROUP_TO_TYPE,
@@ -27,6 +27,8 @@ const CASE_REASONS = [
   "Other",
 ] as const;
 const OWNER_OPTIONS = ["Priya Sharma", "Daniel Cooper", "John Smith", "Unassigned"];
+/** Default to logged-in user; in this app that's John Smith (could come from auth/session later) */
+const DEFAULT_OWNER = "John Smith";
 const CASE_STATUSES: CaseStatus[] = ["New", "In Progress", "Pending", "Resolved", "Closed"];
 
 function formatFileSize(bytes: number): string {
@@ -39,9 +41,11 @@ export interface NewCaseModalProps {
   onClose: () => void;
   onCreate: (newCase: CaseItem) => void;
   caseCount: number;
+  /** When set (e.g. when using DB), submit creates the case via API and passes the returned case to onCreate */
+  createViaApi?: (caseData: CaseItem) => Promise<CaseItem | null>;
 }
 
-export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseModalProps) {
+export default function NewCaseModal({ onClose, onCreate, caseCount, createViaApi }: NewCaseModalProps) {
   const [contactName, setContactName] = React.useState("");
   const [contactId, setContactId] = React.useState("");
   const [accountId, setAccountId] = React.useState("");
@@ -55,23 +59,40 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
   const [caseReason, setCaseReason] = React.useState("");
   const [subject, setSubject] = React.useState("");
   const [description, setDescription] = React.useState("");
-  const [owner, setOwner] = React.useState(OWNER_OPTIONS[0] ?? "");
+  const [owner, setOwner] = React.useState(DEFAULT_OWNER);
   const [caseDocumentationFiles, setCaseDocumentationFiles] = React.useState<File[]>([]);
   const caseDocInputRef = React.useRef<HTMLInputElement>(null);
+
+  const [orgId, setOrgId] = React.useState("");
+  const [orgSearch, setOrgSearch] = React.useState("");
+  const [orgDropdownOpen, setOrgDropdownOpen] = React.useState(false);
+  const orgInputRef = React.useRef<HTMLInputElement>(null);
+  const orgContainerRef = React.useRef<HTMLDivElement>(null);
+
+  const filteredOrgs = React.useMemo(() => {
+    if (!orgSearch) return mockOrgs;
+    const q = orgSearch.toLowerCase();
+    return mockOrgs.filter((o) => o.name.toLowerCase().includes(q));
+  }, [orgSearch]);
+
+  const selectedOrg = mockOrgs.find((o) => o.id === orgId);
 
   const [accountSearch, setAccountSearch] = React.useState("");
   const [accountDropdownOpen, setAccountDropdownOpen] = React.useState(false);
   const accountInputRef = React.useRef<HTMLInputElement>(null);
+  const accountContainerRef = React.useRef<HTMLDivElement>(null);
 
   const filteredAccounts = React.useMemo(() => {
-    if (!accountSearch) return mockAccounts;
+    let list = mockAccounts;
+    if (orgId) list = list.filter((a) => a.orgId === orgId);
+    if (!accountSearch) return list;
     const q = accountSearch.toLowerCase();
-    return mockAccounts.filter(
+    return list.filter(
       (a) =>
         a.name.toLowerCase().includes(q) ||
         a.accountNumber.toLowerCase().includes(q)
     );
-  }, [accountSearch]);
+  }, [orgId, accountSearch]);
 
   const selectedAccount = mockAccounts.find((a) => a.id === accountId);
 
@@ -93,12 +114,20 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
 
   const [emailDropdownOpen, setEmailDropdownOpen] = React.useState(false);
   const emailDropdownRef = React.useRef<HTMLDivElement>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
-        accountInputRef.current &&
-        !accountInputRef.current.parentElement?.contains(e.target as Node)
+        orgContainerRef.current &&
+        !orgContainerRef.current.contains(e.target as Node)
+      ) {
+        setOrgDropdownOpen(false);
+      }
+      if (
+        accountContainerRef.current &&
+        !accountContainerRef.current.contains(e.target as Node)
       ) {
         setAccountDropdownOpen(false);
       }
@@ -131,8 +160,10 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
     setContactName("");
     setContactId("");
     setAccountId("");
+    setOrgId("");
     setSiteId("");
     setAccountSearch("");
+    setOrgSearch("");
     setWebEmail("");
     setStatus("New");
     setCaseOrigin("");
@@ -142,7 +173,7 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
     setCaseReason("");
     setSubject("");
     setDescription("");
-    setOwner(OWNER_OPTIONS[0] ?? "");
+    setOwner(DEFAULT_OWNER);
     setCaseDocumentationFiles([]);
   };
 
@@ -187,12 +218,35 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onCreate(buildCase());
-    if (saveAndNewRef.current) {
-      resetForm();
-      saveAndNewRef.current = false;
+    setSubmitError(null);
+    const built = buildCase();
+    if (createViaApi) {
+      setSubmitting(true);
+      createViaApi(built)
+        .then((created) => {
+          if (created) {
+            onCreate(created);
+            if (!saveAndNewRef.current) onClose();
+            else {
+              resetForm();
+              saveAndNewRef.current = false;
+            }
+          } else {
+            setSubmitError("Failed to create case. Please try again.");
+          }
+        })
+        .catch(() => {
+          setSubmitError("Failed to create case. Check that the database is configured and try again.");
+        })
+        .finally(() => setSubmitting(false));
     } else {
-      onClose();
+      onCreate(built);
+      if (saveAndNewRef.current) {
+        resetForm();
+        saveAndNewRef.current = false;
+      } else {
+        onClose();
+      }
     }
   };
 
@@ -261,7 +315,69 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 pt-0">
               <div className={sectionHeadingWithDivider}>Case Information</div>
 
-              <div className="relative space-y-1.5">
+              <div className="relative space-y-1.5" ref={orgContainerRef}>
+                <label className={formLabel}>Org name</label>
+                <div className="relative">
+                  <input
+                    ref={orgInputRef}
+                    type="text"
+                    className={formInput}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    value={selectedOrg ? selectedOrg.name : orgSearch}
+                    onChange={(e) => {
+                      setOrgId("");
+                      setOrgSearch(e.target.value);
+                      setOrgDropdownOpen(true);
+                    }}
+                    onFocus={() => {
+                      if (selectedOrg) {
+                        setOrgSearch(selectedOrg.name);
+                        setOrgId("");
+                      }
+                      setOrgDropdownOpen(true);
+                    }}
+                    placeholder="Search orgs..."
+                  />
+                  <Icon
+                    name="search"
+                    size={16}
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
+                </div>
+                {orgDropdownOpen && (
+                  <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    {filteredOrgs.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        No orgs found
+                      </div>
+                    ) : (
+                      filteredOrgs.map((o) => (
+                        <button
+                          key={o.id}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setOrgId(o.id);
+                            setOrgSearch("");
+                            setAccountId("");
+                            setAccountSearch("");
+                            setSiteId("");
+                            setContactId("");
+                            setContactName("");
+                            setWebEmail("");
+                            setOrgDropdownOpen(false);
+                          }}
+                        >
+                          <Icon name="business" size={14} className="text-muted-foreground" />
+                          <span className="font-medium text-gray-900 dark:text-gray-100">{o.name}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative space-y-1.5" ref={accountContainerRef}>
                 <label className={formLabel}>
                   Account Name <span className="text-red-500">*</span>
                 </label>
@@ -308,6 +424,8 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
                           onClick={() => {
                             setAccountId(a.id);
                             setAccountSearch("");
+                            setOrgId(a.orgId);
+                            setOrgSearch("");
                             setSiteId("");
                             setContactId("");
                             setContactName("");
@@ -473,7 +591,6 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
                     style={{ fontSize: "var(--tally-font-size-sm)" }}
                     value={status}
                     onChange={(e) => setStatus(e.target.value as CaseStatus)}
-                    disabled
                   >
                     {CASE_STATUSES.map((s) => (
                       <option key={s} value={s}>
@@ -711,6 +828,11 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
             </div>
           </div>
 
+          {submitError && (
+            <p className="px-6 py-2 text-sm text-red-600 dark:text-red-400" role="alert">
+              {submitError}
+            </p>
+          )}
           <div className="flex justify-end gap-3 border-t border-border px-6 py-3 dark:border-gray-700">
             <Button variant="outline" size="md" type="button" onClick={onClose}>
               Cancel
@@ -719,6 +841,7 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
               variant="outline"
               size="md"
               type="submit"
+              disabled={submitting}
               onClick={() => {
                 saveAndNewRef.current = true;
               }}
@@ -728,6 +851,7 @@ export default function NewCaseModal({ onClose, onCreate, caseCount }: NewCaseMo
             <Button
               size="md"
               type="submit"
+              disabled={submitting}
               onClick={() => {
                 saveAndNewRef.current = false;
               }}
