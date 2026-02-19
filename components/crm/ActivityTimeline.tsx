@@ -12,6 +12,7 @@ const activityIcons: Record<string, { icon: string; color: string }> = {
   "Status Change": { icon: "swap_horiz", color: "text-[#0074C4] bg-blue-50 dark:bg-blue-950/30" },
   Assignment: { icon: "person_add", color: "text-[#2C365D] bg-indigo-50 dark:bg-indigo-950/30" },
   Comment: { icon: "chat_bubble", color: "text-[#595767] bg-gray-100 dark:bg-gray-800" },
+  "Note Added": { icon: "edit_note", color: "text-[#8B5CF6] bg-purple-50 dark:bg-purple-950/30" },
   Attachment: { icon: "attach_file", color: "text-[#595767] bg-gray-100 dark:bg-gray-800" },
   "SLA Update": { icon: "timer", color: "text-[#C53B00] bg-orange-50 dark:bg-orange-950/30" },
   Created: { icon: "add_circle", color: "text-[#008000] bg-green-50 dark:bg-green-950/30" },

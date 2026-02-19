@@ -75,6 +75,8 @@ interface CaseDetailContentProps {
   relatedCaseNumbers?: string[];
   /** Callback to open the link-case modal */
   onOpenLinkModal?: () => void;
+  /** Callback to open the note panel */
+  onOpenNotePanel?: () => void;
   /** When set (e.g. DB mode), updates are persisted via API */
   onUpdateCase?: (payload: Partial<CaseItem>) => void | Promise<void>;
   /** When set (e.g. DB mode), show Delete button and call this on confirm */
@@ -83,8 +85,6 @@ interface CaseDetailContentProps {
   relatedCasesMap?: Map<string, CaseItem>;
   /** Note panel open state (controlled by parent) */
   notePanelOpen?: boolean;
-  /** Open the note panel (e.g. from context panel Note button or Communications Actions) */
-  onOpenNotePanel?: () => void;
   /** Close the note panel */
   onCloseNotePanel?: () => void;
 }
@@ -96,6 +96,7 @@ export default function CaseDetailContent({
   showOpenInFullPage = false,
   relatedCaseNumbers: relatedCaseNumbersProp,
   onOpenLinkModal,
+  onOpenNotePanel,
   onUpdateCase,
   onDeleteCase,
   relatedCasesMap,
@@ -103,6 +104,12 @@ export default function CaseDetailContent({
   onOpenNotePanel,
   onCloseNotePanel,
 }: CaseDetailContentProps) {
+  const handleNotePanelOpenChange = React.useCallback(
+    (open: boolean) => {
+      if (!open) onCloseNotePanel?.();
+    },
+    [onCloseNotePanel]
+  );
   const resolveCase = (caseNum: string) => relatedCasesMap?.get(caseNum) ?? getCaseByCaseNumber(caseNum);
   const relatedCaseNumbers = relatedCaseNumbersProp ?? caseItem.relatedCases;
   const [activeTab, setActiveTab] = React.useState("request");
@@ -426,8 +433,8 @@ export default function CaseDetailContent({
                   </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[12rem]">
                   <DropdownMenuItem
-                    className="gap-2 text-left"
                     onClick={() => onOpenNotePanel?.()}
+                    className="gap-2 text-left"
                   >
                     <Icon name="edit" size={16} className="shrink-0 text-muted-foreground" />
                     <span>Note</span>
@@ -721,16 +728,18 @@ export default function CaseDetailContent({
 
       <NotePanel
         open={notePanelOpen}
-        onClose={onCloseNotePanel ?? (() => {})}
-        caseId={caseItem.id}
-        caseNumber={caseItem.caseNumber}
-        currentUser={caseItem.owner}
-        onSave={({ communication, activity }) => {
-          onUpdateCase?.({
-            communications: [...(caseItem.communications ?? []), communication],
-            activities: [...(caseItem.activities ?? []), activity],
-          });
-        }}
+        onOpenChange={handleNotePanelOpenChange}
+        caseItem={caseItem}
+        onSave={
+          onUpdateCase
+            ? async ({ communication, activity }) => {
+                await onUpdateCase({
+                  communications: [...(caseItem.communications ?? []), communication],
+                  activities: [activity, ...(caseItem.activities ?? [])],
+                });
+              }
+            : undefined
+        }
       />
       </div>
     </div>

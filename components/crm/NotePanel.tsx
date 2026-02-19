@@ -1,509 +1,584 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { Icon } from "@/components/ui/icon";
 import Button from "@/components/Button/Button";
-import type { Communication, Activity } from "@/types/crm";
+import Input from "@/components/Input/Input";
+import { Icon } from "@/components/ui/icon";
+import type { Attachment, CaseItem, Communication, Activity } from "@/types/crm";
 
-const DRAFT_KEY_PREFIX = "tally-note-draft-";
-const DRAFT_SAVE_MS = 2500;
+const DRAFT_KEY_PREFIX = "note-draft-";
+const DRAFT_DEBOUNCE_MS = 800;
+const CURRENT_USER = "Current User";
+const MINI_DEFAULT_RIGHT = 24;
+const MINI_DEFAULT_BOTTOM = 24;
 
-function formatTimestamp(): string {
-  return new Date().toISOString();
+function formatTimestamp() {
+  const d = new Date();
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
 
-function generateId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-interface NotePanelProps {
+export interface NotePanelProps {
   open: boolean;
-  onClose: () => void;
-  caseId: string;
-  caseNumber: string;
-  /** Current user name for note attribution */
-  currentUser?: string;
-  onSave: (payload: { communication: Communication; activity: Activity }) => void;
+  onOpenChange: (open: boolean) => void;
+  caseItem: CaseItem;
+  onSave?: (payload: {
+    communication: Communication;
+    activity: Activity;
+  }) => void | Promise<void>;
 }
 
 export default function NotePanel({
   open,
-  onClose,
-  caseId,
-  caseNumber,
-  currentUser = "Current User",
+  onOpenChange,
+  caseItem,
   onSave,
 }: NotePanelProps) {
-  const [isExpanded, setIsExpanded] = React.useState(false);
-  const [position, setPosition] = React.useState<{ x: number; y: number } | null>(null);
-  const [title, setTitle] = React.useState("");
-  const [body, setBody] = React.useState("");
-  const [attachments, setAttachments] = React.useState<{ name: string; size: string }[]>([]);
-  const [saving, setSaving] = React.useState(false);
-  const editorRef = React.useRef<HTMLDivElement>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const panelRef = React.useRef<HTMLDivElement>(null);
-  const draftKey = `${DRAFT_KEY_PREFIX}${caseId}`;
+  const [expanded, setExpanded] = useState(false);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [lastDraftSaved, setLastDraftSaved] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStartRef = useRef({ mouseX: 0, mouseY: 0, offsetX: 0, offsetY: 0 });
+  const editorRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const draftTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [dragState, setDragState] = React.useState<{
-    startX: number;
-    startY: number;
-    startLeft: number;
-    startTop: number;
-  } | null>(null);
+  const draftKey = `${DRAFT_KEY_PREFIX}${caseItem.id}`;
 
-  React.useEffect(() => {
-    if (!dragState) return;
-    const panel = panelRef.current;
-    const w = typeof window !== "undefined" ? window : null;
-    if (!panel || !w) return;
-
-    const move = (e: MouseEvent) => {
-      const dx = e.clientX - dragState.startX;
-      const dy = e.clientY - dragState.startY;
-      let x = dragState.startLeft + dx;
-      let y = dragState.startTop + dy;
-      const rect = panel.getBoundingClientRect();
-      const margin = 16;
-      x = Math.max(margin, Math.min(x, w.innerWidth - rect.width - margin));
-      y = Math.max(margin, Math.min(y, w.innerHeight - rect.height - margin));
-      setPosition({ x, y });
-    };
-    const up = () => setDragState(null);
-    w.addEventListener("mousemove", move);
-    w.addEventListener("mouseup", up);
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
     return () => {
-      w.removeEventListener("mousemove", move);
-      w.removeEventListener("mouseup", up);
+      document.body.style.overflow = "";
     };
-  }, [dragState]);
+  }, [open]);
 
-  const startDrag = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    const panel = panelRef.current;
-    if (!panel) return;
-    const rect = panel.getBoundingClientRect();
-    const left = position?.x ?? rect.left;
-    const top = position?.y ?? rect.top;
-    setPosition({ x: left, y: top });
-    setDragState({
-      startX: e.clientX,
-      startY: e.clientY,
-      startLeft: left,
-      startTop: top,
-    });
-  };
-
-  // Load draft from localStorage when opening
-  React.useEffect(() => {
-    if (open && typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem(draftKey);
-        if (saved) {
-          const parsed = JSON.parse(saved) as {
-            title?: string;
-            body?: string;
-            attachments?: { name: string; size: string }[];
-          };
-          setTitle(parsed.title ?? "");
-          setBody(parsed.body ?? "");
-          setAttachments(parsed.attachments ?? []);
-          if (editorRef.current) {
-            editorRef.current.innerHTML = parsed.body ?? "";
-          }
-        } else {
-          setTitle("");
-          setBody("");
-          setAttachments([]);
-          if (editorRef.current) editorRef.current.innerHTML = "";
+  // Restore draft when opening
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const savedBody = parsed.body;
+        const savedTitle = typeof parsed.title === "string" ? parsed.title : "";
+        const savedAttachments = Array.isArray(parsed.attachments) ? parsed.attachments : [];
+        setTitle(savedTitle);
+        setBody(typeof savedBody === "string" ? savedBody : "");
+        setAttachments(savedAttachments);
+        if (editorRef.current && typeof savedBody === "string" && savedBody) {
+          editorRef.current.innerHTML = savedBody;
         }
-      } catch {
+      } else {
         setTitle("");
         setBody("");
         setAttachments([]);
+        if (editorRef.current) editorRef.current.innerHTML = "";
       }
+    } catch {
+      setTitle("");
+      setBody("");
+      setAttachments([]);
     }
+    setLastDraftSaved(null);
   }, [open, draftKey]);
 
-  // Sync editor content to state for draft
-  const syncBodyFromEditor = React.useCallback(() => {
-    if (editorRef.current) {
-      const html = editorRef.current.innerHTML;
-      setBody(html);
-      return html;
-    }
-    return body;
-  }, [body]);
-
-  // Auto-save draft to localStorage
-  React.useEffect(() => {
+  // Persist draft (debounced)
+  useEffect(() => {
     if (!open) return;
-    const t = setInterval(() => {
-      const html = syncBodyFromEditor();
-      if (typeof window !== "undefined" && (title || html || attachments.length > 0)) {
-        try {
-          localStorage.setItem(
-            draftKey,
-            JSON.stringify({ title, body: html, attachments })
-          );
-        } catch {}
-      }
-    }, DRAFT_SAVE_MS);
-    return () => clearInterval(t);
-  }, [open, draftKey, title, attachments, syncBodyFromEditor]);
+    const html = editorRef.current?.innerHTML ?? "";
+    const trimmed = html.trim();
+    const isEmpty = !trimmed || trimmed === "<br>" || trimmed === "<p><br></p>";
+    if (isEmpty && attachments.length === 0 && !title.trim()) return;
 
-  const handleFormat = (command: string, value?: string) => {
-    document.execCommand(command, false, value ?? undefined);
+    if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current);
+    draftTimeoutRef.current = setTimeout(() => {
+      try {
+        const payload = {
+          title,
+          body: editorRef.current?.innerHTML ?? "",
+          attachments,
+        };
+        localStorage.setItem(draftKey, JSON.stringify(payload));
+        setLastDraftSaved(formatTimestamp());
+      } catch {}
+      draftTimeoutRef.current = null;
+    }, DRAFT_DEBOUNCE_MS);
+
+    return () => {
+      if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current);
+    };
+  }, [open, title, body, attachments, draftKey]);
+
+  const clearDraft = useCallback(() => {
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {}
+  }, [draftKey]);
+
+  const handleEditorInput = () => {
+    setBody(editorRef.current?.innerHTML ?? "");
+  };
+
+  const execFormat = (cmd: string, value?: string) => {
+    document.execCommand(cmd, false, value);
     editorRef.current?.focus();
+    setBody(editorRef.current?.innerHTML ?? "");
   };
 
-  const handleInsertLink = () => {
-    const url = window.prompt("Enter URL:");
-    if (url) handleFormat("createLink", url);
-  };
-
-  const handleInsertSnippet = () => {
-    const text = window.prompt("Snippet text:");
-    if (text && editorRef.current) {
-      document.execCommand(
-        "insertHTML",
-        false,
-        `<span class="bg-gray-100 dark:bg-gray-800 px-1 rounded">${escapeHtml(text)}</span>&nbsp;`
-      );
+  const insertLink = () => {
+    const url = window.prompt("Link URL:");
+    if (url == null) return;
+    const text = window.prompt("Link text (optional):", url);
+    if (text == null) return;
+    execFormat("createLink", url);
+    const sel = window.getSelection();
+    if (sel && sel.anchorNode) {
+      const range = sel.getRangeAt(0);
+      const node = range.startContainer;
+      if (node.nodeType === Node.TEXT_NODE) {
+        (node as Text).textContent = text || url;
+      }
     }
+    setBody(editorRef.current?.innerHTML ?? "");
   };
 
-  const handleUploadClick = () => fileInputRef.current?.click();
+  const insertSnippet = () => {
+    const text = window.prompt("Snippet text:");
+    if (text == null) return;
+    const pre = document.createElement("pre");
+    pre.setAttribute("contenteditable", "false");
+    pre.className = "my-2 rounded bg-gray-100 px-2 py-1.5 font-mono text-sm dark:bg-gray-800";
+    pre.textContent = text;
+    const sel = window.getSelection();
+    if (sel && editorRef.current) {
+      const range = sel.getRangeAt(0);
+      range.insertNode(pre);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    setBody(editorRef.current?.innerHTML ?? "");
+  };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length) return;
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      setAttachments((prev) => [
-        ...prev,
-        { name: f.name, size: f.size < 1024 ? `${f.size} B` : `${(f.size / 1024).toFixed(1)} KB` },
-      ]);
+  const insertImageFromFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = document.createElement("img");
+      img.src = reader.result as string;
+      img.alt = file.name;
+      img.className = "max-h-48 rounded border border-border object-contain";
+      const sel = window.getSelection();
+      if (sel && editorRef.current) {
+        const range = sel.getRangeAt(0);
+        range.insertNode(img);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      setBody(editorRef.current?.innerHTML ?? "");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      insertImageFromFile(file);
     }
     e.target.value = "";
   };
 
-  const removeAttachment = (index: number) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  const addFileAttachment = (file: File) => {
+    const id = `att-note-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    setAttachments((prev) => [
+      ...prev,
+      {
+        id,
+        name: file.name,
+        type: file.type || "file",
+        size: file.size < 1024 ? `${file.size} B` : `${(file.size / 1024).toFixed(1)} KB`,
+        uploadedBy: CURRENT_USER,
+        uploadedDate: formatTimestamp(),
+      },
+    ]);
   };
 
-  const handleSave = () => {
-    const html = syncBodyFromEditor();
-    const plainText = editorRef.current?.innerText ?? "";
-    const subject =
-      title.trim() || plainText.slice(0, 80).replace(/\n/g, " ") || "Note";
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) addFileAttachment(file);
+    e.target.value = "";
+  };
+
+  const handleSave = async () => {
+    const html = editorRef.current?.innerHTML ?? "";
+    const plainBody = (editorRef.current?.innerText ?? "").trim();
+    if (!plainBody && attachments.length === 0) return;
+
     setSaving(true);
-    const timestamp = formatTimestamp();
-    const comm: Communication = {
-      id: generateId("comm"),
-      type: "Note",
-      direction: "Internal",
-      from: currentUser,
-      to: "",
-      subject,
-      body: html,
-      timestamp,
-      attachments: attachments.map((a, i) => ({
-        id: generateId("att"),
-        name: a.name,
-        type: "file",
-        size: a.size,
-        uploadedBy: currentUser,
-        uploadedDate: timestamp,
-      })),
-    };
-    const activity: Activity = {
-      id: generateId("act"),
-      type: "Comment",
-      description: plainText.slice(0, 120) ? `${plainText.slice(0, 120)}${plainText.length > 120 ? "…" : ""}` : "Added a note",
-      user: currentUser,
-      timestamp,
-    };
-    Promise.resolve(onSave({ communication: comm, activity })).finally(() => {
-      setSaving(false);
-      try {
-        localStorage.removeItem(draftKey);
-      } catch {}
+    try {
+      const timestamp = formatTimestamp();
+      const commId = `comm-note-${Date.now()}`;
+      const actId = `act-note-${Date.now()}`;
+      const subject =
+        title.trim() || plainBody.split(/\n/)[0]?.slice(0, 80) || "Note";
+
+      const communication: Communication = {
+        id: commId,
+        type: "Note",
+        direction: "Internal",
+        from: caseItem.owner,
+        to: "",
+        subject,
+        body: html,
+        timestamp,
+        attachments: [...attachments],
+      };
+
+      const activity: Activity = {
+        id: actId,
+        type: "Note Added",
+        description: `Note added: ${subject}`,
+        user: caseItem.owner,
+        timestamp,
+      };
+
+      await onSave?.({ communication, activity });
+      clearDraft();
       setTitle("");
       setBody("");
       setAttachments([]);
       if (editorRef.current) editorRef.current.innerHTML = "";
-      onClose();
-      setIsExpanded(false);
-    });
+      onOpenChange(false);
+      setExpanded(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toolbarButtons = (
-    <>
-      <button
-        type="button"
-        onClick={() => handleFormat("bold")}
-        className="flex h-8 w-8 items-center justify-center rounded text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
-        title="Bold"
-      >
-        <Icon name="format_bold" size={18} />
-      </button>
-      <button
-        type="button"
-        onClick={() => handleFormat("italic")}
-        className="flex h-8 w-8 items-center justify-center rounded text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
-        title="Italic"
-      >
-        <Icon name="format_italic" size={18} />
-      </button>
-      <button
-        type="button"
-        onClick={() => handleFormat("underline")}
-        className="flex h-8 w-8 items-center justify-center rounded text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
-        title="Underline"
-      >
-        <Icon name="format_underlined" size={18} />
-      </button>
-      <button
-        type="button"
-        onClick={handleInsertLink}
-        className="flex h-8 w-8 items-center justify-center rounded text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
-        title="Insert link"
-      >
-        <Icon name="link" size={18} />
-      </button>
-      <div className="h-5 w-px bg-gray-300 dark:bg-gray-600" />
-      <button
-        type="button"
-        onClick={handleInsertSnippet}
-        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
-        title="Insert snippet"
-      >
-        <Icon name="code" size={16} />
-        Snippet
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          handleFormat("insertImage", window.prompt("Image URL:") ?? undefined)
-        }
-        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
-        title="Insert image"
-      >
-        <Icon name="image" size={16} />
-        Image
-      </button>
-      <button
-        type="button"
-        onClick={handleUploadClick}
-        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
-        title="Upload file"
-      >
-        <Icon name="upload_file" size={16} />
-        File
-      </button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        multiple
-        onChange={handleFileChange}
-      />
-    </>
+  const handleClose = () => {
+    onOpenChange(false);
+    setExpanded(false);
+  };
+
+  const handleExpandToggle = () => {
+    setExpanded((e) => !e);
+  };
+
+  // Dragging for mini state
+  const onDragHandleMouseDown = (e: React.MouseEvent) => {
+    if (expanded) return;
+    e.preventDefault();
+    setDragging(true);
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      offsetX: dragOffset.x,
+      offsetY: dragOffset.y,
+    };
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMouseMove = (e: MouseEvent) => {
+      setDragOffset({
+        x: dragStartRef.current.offsetX + (e.clientX - dragStartRef.current.mouseX),
+        y: dragStartRef.current.offsetY + (e.clientY - dragStartRef.current.mouseY),
+      });
+    };
+    const onMouseUp = () => setDragging(false);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [dragging]);
+
+  const canSave = !!(
+    (editorRef.current?.innerText?.trim() ?? body.trim()) ||
+    attachments.length > 0
   );
 
-  const titleSection = (
-    <div className="px-4 pt-3 pb-1">
-      <input
-        id="note-title"
-        type="text"
+  const formContent = (
+    <>
+      {/* Title input */}
+      <Input
+        placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="Title"
-        className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-[#006180] dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
+        className="rounded-lg border-border bg-white dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400"
+        style={{ fontSize: "var(--tally-font-size-sm)" }}
       />
-    </div>
-  );
 
-  const bottomBar = (
-    <div className="shrink-0 px-4 pb-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-800/50">
-        <div className="flex flex-wrap items-center gap-1">
-          {toolbarButtons}
-        </div>
-        {attachments.length > 0 && (
-          <>
-            <div className="h-5 w-px bg-gray-300 dark:bg-gray-600" />
-            <div className="flex flex-wrap gap-2">
-              {attachments.map((a, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-white px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200"
-                >
-                  <Icon name="attach_file" size={14} />
-                  {a.name} ({a.size})
-                  <button
-                    type="button"
-                    onClick={() => removeAttachment(i)}
-                    className="ml-0.5 rounded p-0.5 text-muted-foreground hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-                    aria-label="Remove"
-                  >
-                    <Icon name="close" size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </>
+      {/* Notes area */}
+      <div
+        ref={editorRef}
+        contentEditable
+        onInput={handleEditorInput}
+        className={cn(
+          "min-h-[120px] overflow-y-auto rounded-lg border border-border bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-[#2C365D] focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100",
+          expanded ? "min-h-[200px] max-h-[40vh]" : "max-h-[200px]",
+          "empty:before:content-['Notes'] empty:before:text-gray-400 dark:empty:before:text-gray-500"
         )}
-      </div>
-    </div>
-  );
+        data-placeholder="Notes"
+        style={{ fontSize: "var(--tally-font-size-sm)" }}
+      />
 
-  const editorArea = (
-    <>
-      {titleSection}
-      <div className="flex min-h-0 flex-1 flex-col px-4 pb-2">
-        <div
-          ref={editorRef}
-          contentEditable
-          data-placeholder="Add your note…"
-          className="min-h-[180px] flex-1 overflow-y-auto rounded-md border border-border bg-white px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-[#006180] dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 [&:empty::before]:content-[attr(data-placeholder)] [&:empty::before]:text-muted-foreground"
-          style={{ fontSize: "var(--tally-font-size-sm)" }}
-          onBlur={syncBodyFromEditor}
+      {/* Rich text toolbar below notes */}
+      <div className="flex flex-wrap items-center gap-0.5 py-1.5">
+        <button
+          type="button"
+          onClick={() => execFormat("bold")}
+          className="rounded p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+          title="Bold"
+        >
+          <Icon name="format_bold" size={20} />
+        </button>
+        <button
+          type="button"
+          onClick={() => execFormat("italic")}
+          className="rounded p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+          title="Italic"
+        >
+          <Icon name="format_italic" size={20} />
+        </button>
+        <button
+          type="button"
+          onClick={() => execFormat("underline")}
+          className="rounded p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+          title="Underline"
+        >
+          <Icon name="format_underlined" size={20} />
+        </button>
+        <span className="mx-1 h-5 w-px bg-border dark:bg-gray-600" />
+        <button
+          type="button"
+          onClick={insertLink}
+          className="rounded p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+          title="Insert link"
+        >
+          <Icon name="link" size={20} />
+        </button>
+        <button
+          type="button"
+          onClick={insertSnippet}
+          className="rounded p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+          title="Code"
+        >
+          <Icon name="code" size={20} />
+        </button>
+        <button
+          type="button"
+          onClick={() => imageInputRef.current?.click()}
+          className="rounded p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+          title="Image"
+        >
+          <Icon name="image" size={20} />
+        </button>
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageUpload}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="rounded p-1.5 text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+          title="Attachment"
+        >
+          <Icon name="attach_file" size={20} />
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileUpload}
         />
       </div>
-      {bottomBar}
+
+      {attachments.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {attachments.map((att) => (
+            <div
+              key={att.id}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-gray-50 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+            >
+              <Icon name="attach_file" size={14} className="text-muted-foreground" />
+              <span>{att.name}</span>
+              <span className="text-muted-foreground">({att.size})</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="flex justify-end gap-2 border-t border-border pt-3 dark:border-gray-700">
+        <Button variant="outline" size="sm" onClick={handleClose}>
+          Cancel
+        </Button>
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={saving || !canSave}
+          className="gap-1.5"
+        >
+          {saving ? "Saving…" : "Save"}
+        </Button>
+      </div>
     </>
   );
 
-  const header = (
-    <div className="flex cursor-default select-none items-center justify-between border-b border-border px-4 py-3 dark:border-gray-700">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span
-          role="button"
-          tabIndex={0}
-          onMouseDown={startDrag}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") e.preventDefault();
+  if (!open || typeof document === "undefined") return null;
+
+  // Expanded: centred modal overlay
+  if (expanded) {
+    return createPortal(
+      <>
+        <div
+          className="fixed inset-0 z-50 bg-black/50"
+          aria-hidden
+          onClick={handleClose}
+        />
+        <div
+          role="dialog"
+          aria-labelledby="note-panel-title"
+          className="fixed left-1/2 top-1/2 z-50 flex w-full max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          style={{
+            maxHeight: "min(75vh, 640px)",
+            boxShadow:
+              "0 20px 40px -12px rgba(0,0,0,0.15), 0 8px 20px -8px rgba(0,0,0,0.1)",
           }}
-          className="flex cursor-grab touch-none items-center justify-center rounded p-1 text-muted-foreground hover:bg-gray-100 hover:text-gray-900 active:cursor-grabbing dark:hover:bg-gray-700 dark:hover:text-gray-100"
-          title="Drag to move"
-          aria-label="Drag to move panel"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+            <h2
+              id="note-panel-title"
+              className="text-base font-semibold text-gray-900 dark:text-gray-100"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
+              Add note
+            </h2>
+            {lastDraftSaved && (
+              <span
+                className="text-xs text-muted-foreground"
+                style={{ fontSize: "var(--tally-font-size-xs)" }}
+              >
+                Draft saved {lastDraftSaved}
+              </span>
+            )}
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                type="button"
+                onClick={handleExpandToggle}
+                className="rounded p-1.5 text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                aria-label="Minimise"
+              >
+                <Icon name="close_fullscreen" size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={handleClose}
+                className="rounded p-1.5 text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+                aria-label="Close"
+              >
+                <Icon name="close" size={20} />
+              </button>
+            </div>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
+            {formContent}
+          </div>
+        </div>
+      </>,
+      document.body
+    );
+  }
+
+  // Mini: draggable floating card
+  const miniCard = (
+    <div
+      role="dialog"
+      aria-labelledby="note-panel-title"
+      className={cn(
+        "fixed z-50 flex flex-col overflow-hidden rounded-xl border border-border bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100",
+        "transition-[box-shadow] duration-200",
+        dragging && "shadow-2xl"
+      )}
+      style={{
+        right: MINI_DEFAULT_RIGHT - dragOffset.x,
+        bottom: MINI_DEFAULT_BOTTOM - dragOffset.y,
+        width: "min(400px, calc(100vw - 3rem))",
+        maxHeight: "min(420px, 85vh)",
+        boxShadow:
+          "0 20px 40px -12px rgba(0,0,0,0.15), 0 8px 20px -8px rgba(0,0,0,0.1)",
+      }}
+    >
+      {/* Header: drag handle, title, expand, close */}
+      <div
+        className="flex shrink-0 cursor-grab items-center gap-2 border-b border-border bg-gray-50 px-3 py-2.5 active:cursor-grabbing dark:border-gray-700 dark:bg-gray-800"
+        onMouseDown={onDragHandleMouseDown}
+      >
+        <span
+          className="cursor-grab text-gray-500 active:cursor-grabbing dark:text-gray-400"
+          aria-hidden
         >
           <Icon name="drag_indicator" size={20} />
         </span>
-        <h2 className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">New note</h2>
-      </div>
-      <div className="flex shrink-0 items-center gap-1">
-        {!isExpanded ? (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(true)}
-            className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-            title="Expand"
+        <h2
+          id="note-panel-title"
+          className="flex-1 text-base font-semibold text-gray-900 dark:text-gray-100"
+          style={{ fontSize: "var(--tally-font-size-sm)" }}
+        >
+          Add note
+        </h2>
+        {lastDraftSaved && (
+          <span
+            className="text-xs text-muted-foreground"
+            style={{ fontSize: "var(--tally-font-size-xs)" }}
           >
-            <Icon name="open_in_full" size={18} />
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsExpanded(false)}
-            className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-            title="Minimise"
-          >
-            <Icon name="minimize" size={18} />
-          </button>
+            {lastDraftSaved}
+          </span>
         )}
         <button
           type="button"
-          onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded text-muted-foreground hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-          title="Close"
+          onClick={handleExpandToggle}
+          className="rounded p-1.5 text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+          aria-label="Expand"
+        >
+          <Icon name="open_in_full" size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={handleClose}
+          className="rounded p-1.5 text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700"
+          aria-label="Close"
         >
           <Icon name="close" size={18} />
         </button>
       </div>
-    </div>
-  );
-
-  const footer = (
-    <div className="flex justify-end gap-2 border-t border-border px-4 py-3 dark:border-gray-700">
-      <Button variant="outline" onClick={onClose}>
-        Cancel
-      </Button>
-      <Button
-        disabled={saving}
-        onClick={handleSave}
-        className="bg-[#006180] text-white hover:bg-[#0091BF] dark:bg-[#0091BF] dark:hover:bg-[#00C1FF]"
-      >
-        {saving ? "Saving…" : "Save note"}
-      </Button>
-    </div>
-  );
-
-  if (!open) return null;
-
-  const panelContent = (
-    <>
-      {header}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {editorArea}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4">
+        {formContent}
       </div>
-      {footer}
-    </>
-  );
-
-  const isPositioned = position !== null;
-  const basePanelClass =
-    "fixed z-50 flex flex-col overflow-hidden rounded-xl border border-border bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100";
-  const minimisedClass = "max-h-[70vh] w-full max-w-md";
-  const expandedClass = "max-h-[95vh] w-full max-w-4xl";
-
-  if (isExpanded) {
-    return (
-      <>
-        <div
-          className="fixed inset-0 z-40 bg-black/40 dark:bg-black/50"
-          aria-hidden
-          onClick={() => setIsExpanded(false)}
-        />
-        <div
-          ref={panelRef}
-          role="dialog"
-          aria-label="New note (expanded)"
-          className={cn(basePanelClass, expandedClass)}
-          style={{
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          {panelContent}
-        </div>
-      </>
-    );
-  }
-
-  return (
-    <div
-      ref={panelRef}
-      role="dialog"
-      aria-label="New note"
-      className={cn(basePanelClass, minimisedClass)}
-      style={
-        isPositioned
-          ? { left: position.x, top: position.y }
-          : { right: 24, bottom: 24 }
-      }
-    >
-      {panelContent}
     </div>
   );
-}
 
-function escapeHtml(s: string): string {
-  const div = document.createElement("div");
-  div.textContent = s;
-  return div.innerHTML;
+  return createPortal(miniCard, document.body);
 }

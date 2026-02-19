@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -71,6 +72,7 @@ const TIMELINE_TYPE_LABEL_CLASSES = {
 };
 
 export default function CommunicationsPage() {
+  const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<FilterType>("all");
 
   const filteredItems =
@@ -104,15 +106,15 @@ export default function CommunicationsPage() {
         {/* Quick actions */}
         <div className="mb-density-xl grid grid-cols-1 gap-density-lg sm:grid-cols-2 xl:grid-cols-4">
           {[
-            { title: "Log Call", desc: "Record an outbound or inbound call", icon: "call", iconColor: "text-[#2C365D] dark:text-[#7c8cb8]" },
-            { title: "Send Email", desc: "Compose and send an email to customer", icon: "mail", iconColor: "text-[#0074C4] dark:text-blue-400" },
-            { title: "Schedule Meeting", desc: "Book a meeting or call with customer", icon: "event_available", iconColor: "text-[#008000] dark:text-green-400" },
-            { title: "Add Note", desc: "Add an internal note or update", icon: "note", iconColor: "text-[#8B5CF6] dark:text-purple-400" },
+            { title: "Log Call", desc: "Record an outbound or inbound call", icon: "call", iconColor: "text-[#2C365D] dark:text-[#7c8cb8]", onClick: undefined },
+            { title: "Send Email", desc: "Compose and send an email to customer", icon: "mail", iconColor: "text-[#0074C4] dark:text-blue-400", onClick: undefined },
+            { title: "Schedule Meeting", desc: "Book a meeting or call with customer", icon: "event_available", iconColor: "text-[#008000] dark:text-green-400", onClick: undefined },
+            { title: "Add Note", desc: "Add an internal note or update", icon: "note", iconColor: "text-[#8B5CF6] dark:text-purple-400", onClick: () => router.push("/crm/cases") },
           ].map((action) => (
             <Card
               key={action.title}
               className="group cursor-pointer transition-all shadow-none hover:border-[#2C365D] hover:shadow-sm dark:hover:border-[#7c8cb8]"
-              onClick={() => {}}
+              onClick={action.onClick}
             >
               <div className="flex items-center gap-density-md p-density-lg">
                 <Icon name={action.icon} size="var(--tally-icon-size-lg)" className={action.iconColor} />

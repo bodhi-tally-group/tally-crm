@@ -140,7 +140,8 @@ export interface Activity {
     | "SLA Update"
     | "Created"
     | "Email Sent"
-    | "Email Received";
+    | "Email Received"
+    | "Note Added";
   description: string;
   user: string;
   timestamp: string;

@@ -150,10 +150,17 @@ export default function CommunicationTimeline({
                       </p>
                     </div>
 
-                    {/* Body */}
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                      {comm.body}
-                    </div>
+                    {/* Body (Notes may contain HTML) */}
+                    {comm.type === "Note" && /<[a-zA-Z]/.test(comm.body) ? (
+                      <div
+                        className="prose prose-sm max-w-none text-sm leading-relaxed text-gray-700 dark:prose-invert dark:text-gray-300"
+                        dangerouslySetInnerHTML={{ __html: comm.body }}
+                      />
+                    ) : (
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                        {comm.body}
+                      </div>
+                    )}
 
                     {/* Attachments */}
                     {comm.attachments.length > 0 && (

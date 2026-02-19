@@ -24,6 +24,8 @@ interface AccountContextPanelProps {
   currentCaseId?: string;
   /** Callback to open the link-case modal */
   onOpenLinkModal?: () => void;
+  /** Callback to open the note panel */
+  onOpenNotePanel?: () => void;
   /** When set (e.g. DB mode), resolve case numbers to CaseItem for links */
   relatedCasesMap?: Map<string, CaseItem>;
   /** Called when the Note quick action is clicked */
@@ -67,6 +69,7 @@ export default function AccountContextPanel({
   linkedCaseNumbers = [],
   currentCaseId,
   onOpenLinkModal,
+  onOpenNotePanel,
   relatedCasesMap,
   onOpenNote,
   className,
@@ -130,6 +133,7 @@ export default function AccountContextPanel({
             <button
               key={label}
               type="button"
+              onClick={label === "Note" ? onOpenNotePanel : undefined}
               className="flex shrink-0 flex-col items-center gap-0.5 rounded-density-sm p-1.5 text-muted-foreground transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100"
               title={label}
               onClick={label === "Note" ? onOpenNote : undefined}

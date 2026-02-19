@@ -8,6 +8,7 @@ import { useCaseLinksOverrides } from "@/lib/case-links-overrides";
 import AccountContextPanel from "@/components/crm/AccountContextPanel";
 import CaseDetailContent from "@/components/crm/CaseDetailContent";
 import LinkCaseModal from "@/components/crm/LinkCaseModal";
+import NotePanel from "@/components/crm/NotePanel";
 import type { CaseItem } from "@/types/crm";
 
 const useDatabase = () =>
@@ -126,7 +127,7 @@ export default function CaseDetailPage() {
         linkedCaseNumbers={relatedCaseNumbersList}
         currentCaseId={caseItem.id}
         onOpenLinkModal={() => setLinkModalOpen(true)}
-        onOpenNote={() => setNotePanelOpen(true)}
+        onOpenNotePanel={() => setNotePanelOpen(true)}
         relatedCasesMap={useDb ? relatedCasesMap : undefined}
       />
 
@@ -137,11 +138,11 @@ export default function CaseDetailPage() {
           showBreadcrumbs
           relatedCaseNumbers={relatedCaseNumbersList}
           onOpenLinkModal={() => setLinkModalOpen(true)}
+          onOpenNotePanel={() => setNotePanelOpen(true)}
           onUpdateCase={handleUpdate}
           onDeleteCase={useDb ? handleDelete : undefined}
           relatedCasesMap={useDb ? relatedCasesMap : undefined}
           notePanelOpen={notePanelOpen}
-          onOpenNotePanel={() => setNotePanelOpen(true)}
           onCloseNotePanel={() => setNotePanelOpen(false)}
         />
       </div>
@@ -153,6 +154,18 @@ export default function CaseDetailPage() {
         account={account}
         existingRelatedCaseNumbers={relatedCaseNumbersList}
         onSelectCase={(caseNumber) => addLink(caseItem.id, caseNumber)}
+      />
+
+      <NotePanel
+        open={notePanelOpen}
+        onOpenChange={setNotePanelOpen}
+        caseItem={caseItem}
+        onSave={async ({ communication, activity }) => {
+          await handleUpdate({
+            communications: [...caseItem.communications, communication],
+            activities: [activity, ...caseItem.activities],
+          });
+        }}
       />
     </div>
   );
