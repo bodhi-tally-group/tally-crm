@@ -105,16 +105,13 @@ const DropdownMenuTrigger = React.forwardRef<
   );
 
   if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(
-      children as React.ReactElement<Record<string, unknown>>,
-      // ref is forwarded via setRefs and only read when the child mounts
-      /* eslint-disable-next-line react-hooks/refs -- callback ref does not read ref during render */
-      {
-        ref: setRefs,
-        onClick: () => setOpen(!open),
-        "aria-expanded": open,
-      } as React.Attributes & { onClick: () => void; "aria-expanded": boolean }
-    );
+    const child = children as React.ReactElement<Record<string, unknown>>;
+    const triggerProps: Partial<Record<string, unknown>> & React.Attributes = {
+      ref: setRefs,
+      onClick: () => setOpen(!open),
+      "aria-expanded": open,
+    };
+    return React.cloneElement(child, triggerProps);
   }
 
   return (
