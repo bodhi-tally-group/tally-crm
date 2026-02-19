@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import Button from "@/components/Button/Button";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,24 @@ import {
 import type { CaseItem, CasePriority, CaseStatus, CaseType } from "@/types/crm";
 
 const CASE_PRIORITIES: CasePriority[] = ["Critical", "High", "Medium", "Low"];
+
+const priorityColors: Record<CasePriority, string> = {
+  Critical: "bg-[#C40000]",
+  High: "bg-[#C53B00]",
+  Medium: "bg-yellow-500",
+  Low: "bg-gray-400",
+};
+
 const CASE_ORIGINS = ["Phone", "Email", "Web", "Chat", "Social Media"] as const;
+
+const originIcons: Record<(typeof CASE_ORIGINS)[number], string> = {
+  Phone: "phone",
+  Email: "mail",
+  Web: "language",
+  Chat: "chat",
+  "Social Media": "share",
+};
+
 const CASE_REASONS = [
   "Billing Dispute",
   "Service Quality",
@@ -31,6 +49,14 @@ const OWNER_OPTIONS = ["Priya Sharma", "Daniel Cooper", "John Smith", "Unassigne
 const DEFAULT_OWNER = "John Smith";
 const CASE_STATUSES: CaseStatus[] = ["New", "In Progress", "Pending", "Resolved", "Closed"];
 
+const statusColors: Record<CaseStatus, string> = {
+  New: "bg-blue-500",
+  "In Progress": "bg-[#0074C4]",
+  Pending: "bg-[#C53B00]",
+  Resolved: "bg-[#008000]",
+  Closed: "bg-gray-400",
+};
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -43,9 +69,22 @@ export interface NewCaseModalProps {
   caseCount: number;
   /** When set (e.g. when using DB), submit creates the case via API and passes the returned case to onCreate */
   createViaApi?: (caseData: CaseItem) => Promise<CaseItem | null>;
+  /** When provided, 3 recent cases for the selected org are shown in Case Information */
+  cases?: CaseItem[];
 }
 
-export default function NewCaseModal({ onClose, onCreate, caseCount, createViaApi }: NewCaseModalProps) {
+/** Parse DD/MM/YYYY (en-AU) to timestamp for sorting */
+function parseCreatedDate(s: string): number {
+  const parts = s.trim().split("/");
+  if (parts.length !== 3) return 0;
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  const year = parseInt(parts[2], 10);
+  const d = new Date(year, month, day);
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+}
+
+export default function NewCaseModal({ onClose, onCreate, caseCount, createViaApi, cases: allCases = [] }: NewCaseModalProps) {
   const [contactName, setContactName] = React.useState("");
   const [contactId, setContactId] = React.useState("");
   const [accountId, setAccountId] = React.useState("");
@@ -109,11 +148,26 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
     return acc?.contacts ?? [];
   }, [accountId, siteId]);
 
+  const recentCasesForOrg = React.useMemo(() => {
+    if (!orgId || allCases.length === 0) return [];
+    const accountIdsForOrg = new Set(mockAccounts.filter((a) => a.orgId === orgId).map((a) => a.id));
+    return allCases
+      .filter((c) => accountIdsForOrg.has(c.accountId))
+      .sort((a, b) => parseCreatedDate(b.createdDate) - parseCreatedDate(a.createdDate))
+      .slice(0, 3);
+  }, [orgId, allCases]);
+
   const [contactDropdownOpen, setContactDropdownOpen] = React.useState(false);
   const contactDropdownRef = React.useRef<HTMLDivElement>(null);
 
   const [emailDropdownOpen, setEmailDropdownOpen] = React.useState(false);
   const emailDropdownRef = React.useRef<HTMLDivElement>(null);
+  const [statusDropdownOpen, setStatusDropdownOpen] = React.useState(false);
+  const statusDropdownRef = React.useRef<HTMLDivElement>(null);
+  const [originDropdownOpen, setOriginDropdownOpen] = React.useState(false);
+  const originDropdownRef = React.useRef<HTMLDivElement>(null);
+  const [priorityDropdownOpen, setPriorityDropdownOpen] = React.useState(false);
+  const priorityDropdownRef = React.useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
 
@@ -148,6 +202,24 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
         !emailDropdownRef.current.contains(e.target as Node)
       ) {
         setEmailDropdownOpen(false);
+      }
+      if (
+        statusDropdownRef.current &&
+        !statusDropdownRef.current.contains(e.target as Node)
+      ) {
+        setStatusDropdownOpen(false);
+      }
+      if (
+        originDropdownRef.current &&
+        !originDropdownRef.current.contains(e.target as Node)
+      ) {
+        setOriginDropdownOpen(false);
+      }
+      if (
+        priorityDropdownRef.current &&
+        !priorityDropdownRef.current.contains(e.target as Node)
+      ) {
+        setPriorityDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -289,30 +361,7 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
 
         <form onSubmit={handleSubmit}>
           <div className="px-6 py-4 space-y-4">
-            <div className="space-y-1">
-              <label className={formLabel}>Case Owner</label>
-              <div className="relative max-w-xs">
-                <select
-                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
-                  style={{ fontSize: "var(--tally-font-size-sm)" }}
-                  value={owner}
-                  onChange={(e) => setOwner(e.target.value)}
-                >
-                  {OWNER_OPTIONS.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
-                <Icon
-                  name="expand_more"
-                  size={16}
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 pt-0">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4">
               <div className={sectionHeadingWithDivider}>Case Information</div>
 
               <div className="relative space-y-1.5" ref={orgContainerRef}>
@@ -581,20 +630,18 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
                 )}
               </div>
 
-              <div className={sectionHeadingWithDivider}>Additional Information</div>
-
               <div className="space-y-1">
-                <label className={formLabel}>Status <span className="text-red-500">*</span></label>
+                <label className={formLabel}>Case Owner</label>
                 <div className="relative">
                   <select
-                    className={cn(formInput, "cursor-pointer appearance-none pr-9", "disabled:cursor-not-allowed disabled:opacity-60")}
+                    className={cn(formInput, "cursor-pointer appearance-none pr-9")}
                     style={{ fontSize: "var(--tally-font-size-sm)" }}
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as CaseStatus)}
+                    value={owner}
+                    onChange={(e) => setOwner(e.target.value)}
                   >
-                    {CASE_STATUSES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
+                    {OWNER_OPTIONS.map((o) => (
+                      <option key={o} value={o}>
+                        {o}
                       </option>
                     ))}
                   </select>
@@ -606,83 +653,145 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
                 </div>
               </div>
 
-              <div className="space-y-1 col-span-2">
-                <label className={formLabel}>Case Documentation</label>
-                <input
-                  ref={caseDocInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
-                  onChange={(e) => {
-                    const chosen = e.target.files;
-                    if (chosen?.length) {
-                      setCaseDocumentationFiles((prev) => [...prev, ...Array.from(chosen)]);
-                      e.target.value = "";
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => caseDocInputRef.current?.click()}
-                  className={cn(
-                    formInput,
-                    "flex cursor-pointer items-center gap-2 border-dashed text-left text-muted-foreground hover:border-[#2C365D] hover:bg-gray-50/50 hover:text-gray-700 dark:hover:bg-gray-800/50 dark:hover:text-gray-300"
-                  )}
-                  style={{ fontSize: "var(--tally-font-size-sm)" }}
-                >
-                  <Icon name="upload" size={20} className="shrink-0" />
-                  <span>Choose files from device</span>
-                </button>
-                {caseDocumentationFiles.length > 0 && (
-                  <ul className="mt-2 space-y-1.5 rounded-md border border-border bg-gray-50/50 py-2 px-3 dark:border-gray-700 dark:bg-gray-800/30">
-                    {caseDocumentationFiles.map((file, index) => (
-                      <li
-                        key={`${file.name}-${index}`}
-                        className="flex items-center justify-between gap-2 text-sm"
-                      >
-                        <span className="truncate text-gray-700 dark:text-gray-300" title={file.name}>
-                          {file.name}
-                        </span>
-                        <span className="shrink-0 text-muted-foreground">{formatFileSize(file.size)}</span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setCaseDocumentationFiles((prev) => prev.filter((_, i) => i !== index))
-                          }
-                          className="shrink-0 rounded p-1 text-muted-foreground hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-                          aria-label={`Remove ${file.name}`}
-                        >
-                          <Icon name="close" size={14} />
-                        </button>
+              {orgId && (
+                <div className="col-span-2 space-y-1.5">
+                  <label className={formLabel}>Recent cases for this org</label>
+                  <ul className="rounded-md border border-border bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/30">
+                    {recentCasesForOrg.length === 0 ? (
+                      <li className="px-3 py-2.5 text-sm text-muted-foreground">
+                        No recent cases for this organisation
                       </li>
-                    ))}
+                    ) : (
+                      recentCasesForOrg.map((c) => (
+                        <li key={c.id} className="border-b border-border last:border-b-0 dark:border-gray-700">
+                          <Link
+                            href={`/crm/cases/${c.id}`}
+                            className="flex items-center justify-between gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span className="font-medium text-[#2C365D] dark:text-[#7B9FD0]">{c.caseNumber}</span>
+                            <span className="truncate text-muted-foreground max-w-[200px]" title={c.description}>
+                              {c.description ? `${c.description.slice(0, 50)}${c.description.length > 50 ? "…" : ""}` : c.subType}
+                            </span>
+                            <span className="shrink-0 text-muted-foreground" style={{ fontSize: "var(--tally-font-size-xs)" }}>
+                              {c.createdDate}
+                            </span>
+                          </Link>
+                        </li>
+                      ))
+                    )}
                   </ul>
-                )}
+                </div>
+              )}
+
+              <div className={sectionHeadingWithDivider}>Additional Information</div>
+
+              <div className="relative space-y-1" ref={statusDropdownRef}>
+                <label className={formLabel}>Status <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={cn(formInput, "flex cursor-pointer items-center gap-2 text-left")}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    onClick={() => setStatusDropdownOpen((o) => !o)}
+                    aria-haspopup="listbox"
+                    aria-expanded={statusDropdownOpen}
+                  >
+                    <span className={cn("h-2 w-2 shrink-0 rounded-full", statusColors[status])} />
+                    <span>{status}</span>
+                    <Icon
+                      name="expand_more"
+                      size={16}
+                      className="ml-auto text-muted-foreground shrink-0"
+                    />
+                  </button>
+                  {statusDropdownOpen && (
+                    <div
+                      className="absolute left-0 top-full z-10 mt-1 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
+                      role="listbox"
+                    >
+                      {CASE_STATUSES.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          role="option"
+                          aria-selected={status === s}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setStatus(s);
+                            setStatusDropdownOpen(false);
+                          }}
+                        >
+                          <span className={cn("h-2 w-2 shrink-0 rounded-full", statusColors[s])} />
+                          <span>{s}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="relative space-y-1" ref={originDropdownRef}>
                 <label className={formLabel}>Case Origin <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <select
-                    className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  <button
+                    type="button"
+                    className={cn(formInput, "flex cursor-pointer items-center gap-2 text-left")}
                     style={{ fontSize: "var(--tally-font-size-sm)" }}
-                    value={caseOrigin}
-                    onChange={(e) => setCaseOrigin(e.target.value)}
-                    required
+                    onClick={() => setOriginDropdownOpen((o) => !o)}
+                    aria-haspopup="listbox"
+                    aria-expanded={originDropdownOpen}
                   >
-                    <option value="">--None--</option>
-                    {CASE_ORIGINS.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </select>
-                  <Icon
-                    name="expand_more"
-                    size={16}
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  />
+                    {caseOrigin ? (
+                      <>
+                        <Icon name={originIcons[caseOrigin as (typeof CASE_ORIGINS)[number]]} size={16} className="text-muted-foreground shrink-0" />
+                        <span>{caseOrigin}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">--None--</span>
+                    )}
+                    <Icon
+                      name="expand_more"
+                      size={16}
+                      className="ml-auto text-muted-foreground shrink-0"
+                    />
+                  </button>
+                  {originDropdownOpen && (
+                    <div
+                      className="absolute left-0 top-full z-10 mt-1 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
+                      role="listbox"
+                    >
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={!caseOrigin}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-muted-foreground hover:bg-gray-100 dark:hover:bg-gray-800"
+                        onClick={() => {
+                          setCaseOrigin("");
+                          setOriginDropdownOpen(false);
+                        }}
+                      >
+                        <span className="w-4 shrink-0" aria-hidden />
+                        <span>--None--</span>
+                      </button>
+                      {CASE_ORIGINS.map((o) => (
+                        <button
+                          key={o}
+                          type="button"
+                          role="option"
+                          aria-selected={caseOrigin === o}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setCaseOrigin(o);
+                            setOriginDropdownOpen(false);
+                          }}
+                        >
+                          <Icon name={originIcons[o]} size={16} className="text-muted-foreground shrink-0" />
+                          <span>{o}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -754,26 +863,48 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
                 </div>
               </div>
 
-              <div className="space-y-1">
+              <div className="relative space-y-1" ref={priorityDropdownRef}>
                 <label className={formLabel}>Priority</label>
                 <div className="relative">
-                  <select
-                    className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  <button
+                    type="button"
+                    className={cn(formInput, "flex cursor-pointer items-center gap-2 text-left")}
                     style={{ fontSize: "var(--tally-font-size-sm)" }}
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value as CasePriority)}
+                    onClick={() => setPriorityDropdownOpen((o) => !o)}
+                    aria-haspopup="listbox"
+                    aria-expanded={priorityDropdownOpen}
                   >
-                    {CASE_PRIORITIES.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
-                  <Icon
-                    name="expand_more"
-                    size={16}
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                  />
+                    <span className={cn("h-2 w-2 shrink-0 rounded-full", priorityColors[priority])} />
+                    <span>{priority}</span>
+                    <Icon
+                      name="expand_more"
+                      size={16}
+                      className="ml-auto text-muted-foreground shrink-0"
+                    />
+                  </button>
+                  {priorityDropdownOpen && (
+                    <div
+                      className="absolute left-0 top-full z-10 mt-1 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900"
+                      role="listbox"
+                    >
+                      {CASE_PRIORITIES.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          role="option"
+                          aria-selected={priority === p}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setPriority(p);
+                            setPriorityDropdownOpen(false);
+                          }}
+                        >
+                          <span className={cn("h-2 w-2 shrink-0 rounded-full", priorityColors[p])} />
+                          <span>{p}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -801,7 +932,62 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
                 </div>
               </div>
 
-              <div className={sectionHeadingWithDivider}>Description Information</div>
+              <div className="space-y-1">
+                <label className={formLabel}>Case Documentation</label>
+                <input
+                  ref={caseDocInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
+                  onChange={(e) => {
+                    const chosen = e.target.files;
+                    if (chosen?.length) {
+                      setCaseDocumentationFiles((prev) => [...prev, ...Array.from(chosen)]);
+                      e.target.value = "";
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => caseDocInputRef.current?.click()}
+                  className={cn(
+                    formInput,
+                    "flex cursor-pointer items-center gap-2 border-dashed text-left text-muted-foreground hover:border-[#2C365D] hover:bg-gray-50/50 hover:text-gray-700 dark:hover:bg-gray-800/50 dark:hover:text-gray-300"
+                  )}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                >
+                  <Icon name="upload" size={20} className="shrink-0" />
+                  <span>Choose files from device</span>
+                </button>
+                {caseDocumentationFiles.length > 0 && (
+                  <ul className="mt-2 space-y-1.5 rounded-md border border-border bg-gray-50/50 py-2 px-3 dark:border-gray-700 dark:bg-gray-800/30">
+                    {caseDocumentationFiles.map((file, index) => (
+                      <li
+                        key={`${file.name}-${index}`}
+                        className="flex items-center justify-between gap-2 text-sm"
+                      >
+                        <span className="truncate text-gray-700 dark:text-gray-300" title={file.name}>
+                          {file.name}
+                        </span>
+                        <span className="shrink-0 text-muted-foreground">{formatFileSize(file.size)}</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCaseDocumentationFiles((prev) => prev.filter((_, i) => i !== index))
+                          }
+                          className="shrink-0 rounded p-1 text-muted-foreground hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          <Icon name="close" size={14} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className={sectionHeadingWithDivider}>Description</div>
 
               <div className="col-span-2 space-y-1.5">
                 <label className={formLabel}>Subject</label>

@@ -18,10 +18,10 @@ import type { Account, CaseItem, CasePriority, CaseStatus, Contact } from "@/typ
 
 const CASE_STATUSES: CaseStatus[] = ["New", "In Progress", "Pending", "Resolved", "Closed"];
 
-const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline"> = {
+const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline" | "yellow"> = {
   Critical: "error",
   High: "warning",
-  Medium: "info",
+  Medium: "yellow",
   Low: "outline",
 };
 

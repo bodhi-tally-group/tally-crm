@@ -17,8 +17,7 @@ import { cn } from "@/lib/utils";
 const navItems: NavigationItem[] = [
   { id: "home", label: "Home", icon: "home", href: "/crm" },
   { id: "cases", label: "Cases", icon: "inbox", href: "/crm/cases" },
-  // Pipeline hidden for now; will be re-enabled later
-  // { id: "pipeline", label: "Pipeline", icon: "trending_up", href: "/crm/pipeline" },
+  { id: "pipeline", label: "Sales Pipeline", icon: "trending_up", href: "/crm/pipeline" },
   {
     id: "customer-management",
     label: "Customer Management",
@@ -118,9 +117,11 @@ export default function CRMLayout({
               ? "customer-management"
               : pathname.startsWith("/crm/cases")
                 ? "cases"
-                : pathname.startsWith("/crm/settings")
-                  ? "settings"
-                  : "cases";
+                : pathname.startsWith("/crm/pipeline")
+                  ? "pipeline"
+                  : pathname.startsWith("/crm/settings")
+                    ? "settings"
+                    : "cases";
 
   return (
     <div className="flex h-screen min-w-0 flex-col overflow-hidden bg-[#F9F9FB] dark:bg-gray-900">

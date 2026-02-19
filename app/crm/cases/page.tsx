@@ -90,10 +90,10 @@ const statusOrder: Record<string, number> = {
   Closed: 4,
 };
 
-const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline"> = {
+const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline" | "yellow"> = {
   Critical: "error",
   High: "warning",
-  Medium: "info",
+  Medium: "yellow",
   Low: "outline",
 };
 
@@ -705,6 +705,7 @@ export default function CaseListPage() {
           }}
           caseCount={cases.length}
           createViaApi={useDb ? createCaseViaApi : undefined}
+          cases={cases}
         />
       )}
     </div>
