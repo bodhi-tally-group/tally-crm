@@ -1,0 +1,26 @@
+---
+description: Consistent UI/UX and reusable components in tally-crm
+globs: **/components/**/*.tsx,**/app/**/*.tsx
+alwaysApply: false
+---
+
+# UI/UX Consistency & Reusable Components
+
+## Use existing components first
+- **Do not** build one-off buttons, inputs, cards, or form controls. Use components from `@/components/` or `@/components/ui/`.
+- **Buttons**: `@/components/Button/Button` (variants: primary, secondary, outline, ghost, success, warning, error, info; sizes: sm, md, lg, icon).
+- **Forms**: Input, Select, Checkbox, RadioGroup, Toggle, Textarea, Label from `@/components/` or `@/components/ui/`.
+- **Layout/feedback**: Card, Dialog, Sheet, Toast, Alert, Table, Tabs, Breadcrumb, Skeleton.
+- **Typography**: Always use `@/components/Typography/Typography` (H1, H2, H3, H4, Body, Caption, etc.) for headings and body text — do not use raw `<h1>`, `<p>` with ad-hoc classes.
+- **CRM-specific**: Use existing CRM components (e.g. PipelineColumn, StatusProgressBar, SLAIndicator, ActivityTimeline) where they fit.
+
+## Design tokens (consistency)
+- **Colors**: Use theme variables — `background`, `foreground`, `primary`, `muted`, `accent`, `border`, `card`, etc. (from `app/globals.css`). Prefer Tailwind classes that map to these (e.g. `bg-background`, `text-foreground`, `border-border`) rather than hardcoded colors.
+- **Spacing, type, radius**: Use density tokens when building or styling components — `--tally-spacing-*`, `--tally-font-size-*`, `--tally-line-height-*`, `--tally-radius-*`, `--tally-icon-size-*` (see `lib/density-tokens.ts`). This keeps layout and type consistent and density-aware.
+- **Density**: The app supports density modes (e.g. compact/normal/comfortable). Prefer components that already use `getDensityClasses` or density CSS vars so new UI respects user density preference.
+
+## UX principles
+- **Hierarchy**: Use Typography levels consistently (H1 page title, H2 section, H3 subsection, Body, Caption).
+- **Spacing**: Use consistent spacing between sections and form fields; avoid arbitrary values when token-based spacing exists.
+- **Focus and accessibility**: Preserve focus rings and semantic HTML (labels, landmarks). Use existing focusable components rather than adding new divs with click handlers.
+- **Loading and empty states**: Use Skeleton or existing patterns; avoid blank areas without feedback.

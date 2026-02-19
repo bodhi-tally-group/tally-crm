@@ -1,0 +1,11 @@
+---
+description: Prisma and database usage in tally-crm
+globs: prisma/**/*,**/*prisma*
+alwaysApply: false
+---
+
+# Prisma & Database
+
+- After changing `prisma/schema.prisma`, run `prisma generate` before building or running.
+- Use the Prisma client from `@/lib` or where the project initializes it; do not create new client instances in random files.
+- Prefer type-safe queries; avoid raw SQL unless necessary.

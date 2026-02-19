@@ -1,0 +1,31 @@
+---
+description: Core standards for tally-crm — stack, paths, and checks after changes
+alwaysApply: true
+---
+
+# tally-crm Project Standards
+
+## Stack
+- **Framework**: Next.js 16 (App Router), React 19
+- **Database**: Prisma with SQLite (better-sqlite3)
+- **Styling**: Tailwind CSS v4
+- **UI**: shadcn/ui (new-york style, zinc base, CSS variables)
+- **Language**: TypeScript (strict mode)
+
+## Paths
+- Use the `@/` alias for imports (maps to project root), e.g. `@/components/Button`, `@/lib/db`, `@/app/crm/dashboard/page`.
+
+## UI components (shadcn)
+- **shadcn primitives** live in `@/components/ui/` (e.g. `button`, `input`, `calendar`, `card`, `badge`, `icon`). Import from there: `import { Button } from "@/components/ui/button"`.
+- **Project-specific components** live in named folders under `@/components/` (e.g. `Button/Button.tsx`, `Select/Select.tsx`). Prefer these when they wrap or extend shadcn with app logic.
+- **Utilities**: shadcn uses `@/lib/utils` (e.g. `cn()`). Add new shadcn components with `npx shadcn@latest add <component>` so `components.json` and aliases stay correct.
+
+## Before and after code changes
+1. Run `npm run lint` and fix any issues.
+2. Run `npx tsc --noEmit` and fix type errors.
+3. For full verification: `prisma generate && npm run build`.
+
+## Conventions
+- Prefer small, focused edits. Avoid changing unrelated files.
+- Do not add new dependencies unless necessary; prefer existing packages and shadcn components.
+- Keep components and utilities in their existing directories (e.g. `components/`, `components/ui/`, `app/`, `lib/`).

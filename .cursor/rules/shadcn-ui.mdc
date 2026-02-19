@@ -1,0 +1,22 @@
+---
+description: shadcn/ui usage and component patterns in tally-crm
+globs: **/components/**/*.tsx,**/app/**/*.tsx
+alwaysApply: false
+---
+
+# shadcn/ui in tally-crm
+
+## Setup (from components.json)
+- **Style**: new-york
+- **RSC**: true
+- **Base color**: zinc, CSS variables enabled
+- **Aliases**: `@/components`, `@/components/ui`, `@/lib/utils`, `@/lib`, `@/hooks`
+
+## Usage
+- Use existing shadcn components from `@/components/ui/` (button, input, calendar, card, badge, icon) instead of building new primitives.
+- Use `cn()` from `@/lib/utils` for conditional Tailwind classes.
+- Add new shadcn components via CLI: `npx shadcn@latest add <component>` — do not copy-paste from the docs into random paths.
+
+## Custom vs shadcn
+- **Custom components** (e.g. `components/Button/Button.tsx`, `components/Select/Select.tsx`) may wrap or compose shadcn; prefer them when they encode app-specific behavior or design.
+- **New UI primitives** (forms, dialogs, dropdowns) should generally be added as shadcn components to `components/ui/` for consistency.

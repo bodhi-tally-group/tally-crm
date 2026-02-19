@@ -1,0 +1,20 @@
+---
+description: TypeScript and React conventions for tally-crm
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+
+# TypeScript & React Conventions
+
+## General
+- Use functional components and hooks.
+- Prefer `interface` for object shapes; use `type` for unions/utility types.
+- Avoid `any`; use `unknown` and narrow, or proper types.
+
+## React
+- Colocate component-specific logic in the same file or a sibling hook/file when it grows.
+- Use existing UI primitives under `components/` and `components/ui/` (Button, Input, Dialog, shadcn components) rather than reinventing.
+
+## Imports
+- Use `@/` for project imports: `import { Button } from '@/components/Button/Button'` or `import { Button } from '@/components/ui/button'`.
+- Group: external packages first, then `@/` imports, then relative only when necessary.

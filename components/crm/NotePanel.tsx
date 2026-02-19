@@ -59,6 +59,9 @@ export default function NotePanel({
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
+      // Always open in default position and mini state
+      setDragOffset({ x: 0, y: 0 });
+      setExpanded(false);
     } else {
       document.body.style.overflow = "";
     }
@@ -331,7 +334,7 @@ export default function NotePanel({
         contentEditable
         onInput={handleEditorInput}
         className={cn(
-          "min-h-[120px] overflow-y-auto rounded-lg border border-border bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-[#2C365D] focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100",
+          "mt-3 min-h-[120px] overflow-y-auto rounded-lg border border-border bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-[#2C365D] focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100",
           expanded ? "min-h-[200px] max-h-[40vh]" : "max-h-[200px]",
           "empty:before:content-['Notes'] empty:before:text-gray-400 dark:empty:before:text-gray-500"
         )}
@@ -447,14 +450,14 @@ export default function NotePanel({
 
   if (!open || typeof document === "undefined") return null;
 
-  // Expanded: centred modal overlay
+  // Expanded: centred modal overlay — clicking overlay minimizes to mini, does not close
   if (expanded) {
     return createPortal(
       <>
         <div
           className="fixed inset-0 z-50 bg-black/50"
           aria-hidden
-          onClick={handleClose}
+          onClick={() => setExpanded(false)}
         />
         <div
           role="dialog"
