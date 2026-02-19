@@ -38,18 +38,19 @@ export default function CommunicationTimeline({
   );
   const isControlled = controlledExpandedIds !== undefined && onExpandedIdsChange != null;
   const expandedIds = isControlled ? controlledExpandedIds : internalExpandedIds;
-  const setExpandedIds = isControlled ? onExpandedIdsChange! : setInternalExpandedIds;
 
   const toggleExpanded = (id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    const next = new Set(expandedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    if (isControlled && onExpandedIdsChange) {
+      onExpandedIdsChange(next);
+    } else {
+      setInternalExpandedIds(next);
+    }
   };
 
   // Sort by timestamp descending (newest first)
