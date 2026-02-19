@@ -136,7 +136,6 @@ export default function AccountContextPanel({
               onClick={label === "Note" ? onOpenNotePanel : undefined}
               className="flex shrink-0 flex-col items-center gap-0.5 rounded-density-sm p-1.5 text-muted-foreground transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100"
               title={label}
-              onClick={label === "Note" ? onOpenNote : undefined}
             >
               <Icon name={icon} size={18} />
               <span style={{ fontSize: "var(--tally-font-size-xs)" }}>{label}</span>
