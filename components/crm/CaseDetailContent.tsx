@@ -38,6 +38,14 @@ const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outl
   Low: "outline",
 };
 
+const STATUS_ICONS: Record<CaseStatus, string> = {
+  New: "add_circle",
+  "In Progress": "pending",
+  Pending: "hourglass_top",
+  Resolved: "task_alt",
+  Closed: "check_circle",
+};
+
 function DataField({
   label,
   value,
@@ -669,18 +677,23 @@ export default function CaseDetailContent({
         open={pendingStatusChange !== null}
         onOpenChange={(open) => !open && setPendingStatusChange(null)}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-base">Change status</DialogTitle>
+        <DialogContent className="flex max-w-sm flex-col gap-3 p-4 sm:p-5">
+          <DialogHeader className="space-y-0">
+            <div className="flex items-center gap-3">
+              {pendingStatusChange && (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#2C365D] bg-[#2C365D] text-white dark:border-[#7c8cb8] dark:bg-[#2C365D]">
+                  <Icon name={STATUS_ICONS[pendingStatusChange]} size={18} />
+                </div>
+              )}
+              <DialogTitle className="text-base leading-tight">
+                Change status to {pendingStatusChange}
+              </DialogTitle>
+            </div>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Are you sure you want to change the case status to{" "}
-            <span className="font-medium text-gray-900 dark:text-gray-100">
-              {pendingStatusChange}
-            </span>
-            ?
+            Are you sure you want to change the case status?
           </p>
-          <DialogFooter className="gap-2 pt-2">
+          <DialogFooter className="gap-2 pt-0">
             <Button
               variant="outline"
               onClick={() => setPendingStatusChange(null)}
