@@ -156,6 +156,7 @@ export default function CaseListPage() {
   const [sortField, setSortField] = React.useState<SortField>("createdDate");
   const [sortDir, setSortDir] = React.useState<SortDirection>("desc");
   const [linkModalOpen, setLinkModalOpen] = React.useState(false);
+  const [notePanelOpen, setNotePanelOpen] = React.useState(false);
   type PendingReason = "Customer" | "3rd Party" | "On Hold";
   const [pendingFiltersSelected, setPendingFiltersSelected] = React.useState<
     Set<PendingReason>
@@ -551,6 +552,7 @@ export default function CaseListPage() {
                       linkedCaseNumbers={relatedCaseNumbers}
                       currentCaseId={caseItem.id}
                       onOpenLinkModal={() => setLinkModalOpen(true)}
+                      onOpenNote={() => setNotePanelOpen(true)}
                     />
                     <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto">
                       <CaseDetailContent
@@ -562,6 +564,9 @@ export default function CaseListPage() {
                         onOpenLinkModal={() => setLinkModalOpen(true)}
                         onUpdateCase={handleTabUpdate}
                         onDeleteCase={useDb ? handleTabDelete : undefined}
+                        notePanelOpen={notePanelOpen}
+                        onOpenNotePanel={() => setNotePanelOpen(true)}
+                        onCloseNotePanel={() => setNotePanelOpen(false)}
                       />
                     </div>
                     <LinkCaseModal

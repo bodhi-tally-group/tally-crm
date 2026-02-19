@@ -18,6 +18,7 @@ export default function CaseDetailPage() {
   const router = useRouter();
   const caseId = params.id as string;
   const [linkModalOpen, setLinkModalOpen] = React.useState(false);
+  const [notePanelOpen, setNotePanelOpen] = React.useState(false);
   const [caseItem, setCaseItem] = React.useState<CaseItem | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [notFound, setNotFound] = React.useState(false);
@@ -125,6 +126,7 @@ export default function CaseDetailPage() {
         linkedCaseNumbers={relatedCaseNumbersList}
         currentCaseId={caseItem.id}
         onOpenLinkModal={() => setLinkModalOpen(true)}
+        onOpenNote={() => setNotePanelOpen(true)}
         relatedCasesMap={useDb ? relatedCasesMap : undefined}
       />
 
@@ -138,6 +140,9 @@ export default function CaseDetailPage() {
           onUpdateCase={handleUpdate}
           onDeleteCase={useDb ? handleDelete : undefined}
           relatedCasesMap={useDb ? relatedCasesMap : undefined}
+          notePanelOpen={notePanelOpen}
+          onOpenNotePanel={() => setNotePanelOpen(true)}
+          onCloseNotePanel={() => setNotePanelOpen(false)}
         />
       </div>
 

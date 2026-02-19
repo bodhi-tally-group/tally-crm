@@ -15,9 +15,9 @@ interface CommunicationTimelineProps {
 }
 
 const directionConfig = {
-  Inbound: { icon: "call_received", color: "text-[#0074C4]", label: "Inbound" },
-  Outbound: { icon: "call_made", color: "text-[#008000]", label: "Outbound" },
-  Internal: { icon: "forum", color: "text-[#595767]", label: "Internal" },
+  Inbound: { icon: "call_received", label: "Inbound" },
+  Outbound: { icon: "call_made", label: "Outbound" },
+  Internal: { icon: "forum", label: "Internal" },
 };
 
 const typeIcons: Record<string, string> = {
@@ -26,6 +26,11 @@ const typeIcons: Record<string, string> = {
   Note: "edit_note",
   System: "settings",
 };
+
+function formatTimestampDisplay(ts: string): string {
+  const d = new Date(ts);
+  return Number.isFinite(d.getTime()) ? d.toLocaleString() : ts;
+}
 
 export default function CommunicationTimeline({
   communications,
@@ -53,10 +58,19 @@ export default function CommunicationTimeline({
     }
   };
 
-  // Sort by timestamp descending (newest first)
-  const sorted = [...communications].sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
+  // Sort by latest first: timestamp descending, then by array index (later = newer)
+  const sorted = [...communications]
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => {
+      const tA = new Date(a.c.timestamp).getTime();
+      const tB = new Date(b.c.timestamp).getTime();
+      const aValid = Number.isFinite(tA);
+      const bValid = Number.isFinite(tB);
+      if (aValid && bValid) return tB - tA;
+      if (!aValid && !bValid) return b.i - a.i;
+      return aValid ? -1 : 1;
+    })
+    .map((x) => x.c);
 
   return (
     <div className={cn("space-y-1", className)}>
@@ -70,15 +84,10 @@ export default function CommunicationTimeline({
           const dirConfig = directionConfig[comm.direction];
 
           return (
-            <div key={comm.id} className="relative pb-4 pl-10">
-              {/* Timeline dot */}
-              <div
-                className={cn(
-                  "absolute left-2 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-white dark:bg-gray-950",
-                  dirConfig.color
-                )}
-              >
-                <Icon name={typeIcons[comm.type] ?? "mail"} size={14} />
+            <div key={comm.id} className="relative pb-4 pl-12">
+              {/* Timeline dot – aligned with vertical line at left-4 */}
+              <div className="absolute left-0.5 top-0 flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-gray-950 text-muted-foreground">
+                <Icon name={typeIcons[comm.type] ?? "mail"} size={22} />
               </div>
 
               {/* Communication card */}
@@ -114,7 +123,7 @@ export default function CommunicationTimeline({
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <span className="text-[11px] text-muted-foreground">
-                      {comm.timestamp}
+                      {formatTimestampDisplay(comm.timestamp)}
                     </span>
                     <Icon
                       name={isExpanded ? "expand_less" : "expand_more"}
@@ -137,7 +146,7 @@ export default function CommunicationTimeline({
                       </p>
                       <p>
                         <span className="font-medium">Date:</span>{" "}
-                        {comm.timestamp}
+                        {formatTimestampDisplay(comm.timestamp)}
                       </p>
                     </div>
 

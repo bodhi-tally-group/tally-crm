@@ -13,6 +13,7 @@ import CommunicationTimeline from "@/components/crm/CommunicationTimeline";
 import ActivityTimeline from "@/components/crm/ActivityTimeline";
 import DocumentAttachments from "@/components/crm/DocumentAttachments";
 import CloseCaseModal from "@/components/crm/CloseCaseModal";
+import NotePanel from "@/components/crm/NotePanel";
 import {
   Dialog,
   DialogContent,
@@ -80,6 +81,12 @@ interface CaseDetailContentProps {
   onDeleteCase?: () => void | Promise<void>;
   /** When set (e.g. DB mode), resolve related case numbers to CaseItem for links */
   relatedCasesMap?: Map<string, CaseItem>;
+  /** Note panel open state (controlled by parent) */
+  notePanelOpen?: boolean;
+  /** Open the note panel (e.g. from context panel Note button or Communications Actions) */
+  onOpenNotePanel?: () => void;
+  /** Close the note panel */
+  onCloseNotePanel?: () => void;
 }
 
 export default function CaseDetailContent({
@@ -92,6 +99,9 @@ export default function CaseDetailContent({
   onUpdateCase,
   onDeleteCase,
   relatedCasesMap,
+  notePanelOpen = false,
+  onOpenNotePanel,
+  onCloseNotePanel,
 }: CaseDetailContentProps) {
   const resolveCase = (caseNum: string) => relatedCasesMap?.get(caseNum) ?? getCaseByCaseNumber(caseNum);
   const relatedCaseNumbers = relatedCaseNumbersProp ?? caseItem.relatedCases;
@@ -415,7 +425,10 @@ export default function CaseDetailContent({
                     <Icon name="expand_more" size={16} className="shrink-0" />
                   </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[12rem]">
-                  <DropdownMenuItem className="gap-2 text-left">
+                  <DropdownMenuItem
+                    className="gap-2 text-left"
+                    onClick={() => onOpenNotePanel?.()}
+                  >
                     <Icon name="edit" size={16} className="shrink-0 text-muted-foreground" />
                     <span>Note</span>
                   </DropdownMenuItem>
@@ -703,6 +716,20 @@ export default function CaseDetailContent({
               })
             ).finally(() => setUpdating(false));
           }
+        }}
+      />
+
+      <NotePanel
+        open={notePanelOpen}
+        onClose={onCloseNotePanel ?? (() => {})}
+        caseId={caseItem.id}
+        caseNumber={caseItem.caseNumber}
+        currentUser={caseItem.owner}
+        onSave={({ communication, activity }) => {
+          onUpdateCase?.({
+            communications: [...(caseItem.communications ?? []), communication],
+            activities: [...(caseItem.activities ?? []), activity],
+          });
         }}
       />
       </div>
