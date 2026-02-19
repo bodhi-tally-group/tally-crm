@@ -101,7 +101,6 @@ export default function CaseDetailContent({
   onDeleteCase,
   relatedCasesMap,
   notePanelOpen = false,
-  onOpenNotePanel,
   onCloseNotePanel,
 }: CaseDetailContentProps) {
   const handleNotePanelOpenChange = React.useCallback(
