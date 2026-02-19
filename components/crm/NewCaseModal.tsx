@@ -291,6 +291,16 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
+    if (caseOrigin === "Phone") {
+      if (!caseType.trim()) {
+        setSubmitError("Case Type is required for Phone cases.");
+        return;
+      }
+      if (!caseReason.trim()) {
+        setSubmitError("Case Reason is required for Phone cases.");
+        return;
+      }
+    }
     const built = buildCase();
     if (createViaApi) {
       setSubmitting(true);
@@ -732,7 +742,7 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
               </div>
 
               <div className="relative space-y-1" ref={originDropdownRef}>
-                <label className={formLabel}>Case Origin <span className="text-red-500">*</span></label>
+                <label className={formLabel}>Source <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <button
                     type="button"
@@ -827,7 +837,9 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
               </div>
 
               <div className="space-y-1">
-                <label className={formLabel}>Case Type</label>
+                <label className={formLabel}>
+                  Case Type{caseOrigin === "Phone" && <span className="text-red-500"> *</span>}
+                </label>
                 <div className="relative">
                   <select
                     className={cn(
@@ -909,7 +921,9 @@ export default function NewCaseModal({ onClose, onCreate, caseCount, createViaAp
               </div>
 
               <div className="space-y-1">
-                <label className={formLabel}>Case Reason</label>
+                <label className={formLabel}>
+                  Case Reason{caseOrigin === "Phone" && <span className="text-red-500"> *</span>}
+                </label>
                 <div className="relative">
                   <select
                     className={cn(formInput, "cursor-pointer appearance-none pr-9")}

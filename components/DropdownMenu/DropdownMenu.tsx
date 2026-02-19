@@ -109,7 +109,7 @@ const DropdownMenuContent = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "absolute z-50 mt-2 min-w-[8rem] overflow-hidden rounded-md border border-border bg-white p-1 text-gray-900 shadow-md",
+        "absolute z-50 mt-2 min-w-[8rem] overflow-hidden rounded-md border border-border bg-white p-1 text-gray-900 shadow-md dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100",
         alignClasses[align],
         className
       )}
@@ -130,9 +130,9 @@ const DropdownMenuItem = React.forwardRef<
       ref={ref}
       type="button"
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-gray-100 focus:text-gray-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "relative flex w-full cursor-default select-none items-center justify-start rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100 dark:focus:bg-gray-700 dark:focus:text-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         variant === "destructive" &&
-          "text-[#C40000] focus:bg-red-50 focus:text-[#C40000]",
+          "text-[#C40000] hover:bg-red-50 focus:bg-red-50 focus:text-[#C40000] dark:hover:bg-red-950/30 dark:focus:bg-red-950/30",
         className
       )}
       {...props}

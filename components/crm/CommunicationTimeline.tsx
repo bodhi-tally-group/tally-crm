@@ -4,12 +4,14 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/ui/icon";
 import Badge from "@/components/Badge/Badge";
-import Button from "@/components/Button/Button";
 import type { Communication } from "@/types/crm";
 
 interface CommunicationTimelineProps {
   communications: Communication[];
   className?: string;
+  /** Controlled expand state; when provided with onExpandedIdsChange, component is controlled */
+  expandedIds?: Set<string>;
+  onExpandedIdsChange?: (ids: Set<string>) => void;
 }
 
 const directionConfig = {
@@ -28,10 +30,15 @@ const typeIcons: Record<string, string> = {
 export default function CommunicationTimeline({
   communications,
   className,
+  expandedIds: controlledExpandedIds,
+  onExpandedIdsChange,
 }: CommunicationTimelineProps) {
-  const [expandedIds, setExpandedIds] = React.useState<Set<string>>(
+  const [internalExpandedIds, setInternalExpandedIds] = React.useState<Set<string>>(
     new Set(communications.length > 0 ? [communications[0].id] : [])
   );
+  const isControlled = controlledExpandedIds !== undefined && onExpandedIdsChange != null;
+  const expandedIds = isControlled ? controlledExpandedIds : internalExpandedIds;
+  const setExpandedIds = isControlled ? onExpandedIdsChange! : setInternalExpandedIds;
 
   const toggleExpanded = (id: string) => {
     setExpandedIds((prev) => {
@@ -52,18 +59,6 @@ export default function CommunicationTimeline({
 
   return (
     <div className={cn("space-y-1", className)}>
-      {/* Compose button */}
-      <div className="mb-3 flex items-center gap-2">
-        <Button size="sm" className="gap-1.5">
-          <Icon name="edit" size={16} />
-          Compose
-        </Button>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <Icon name="reply" size={16} />
-          Reply
-        </Button>
-      </div>
-
       {/* Timeline */}
       <div className="relative">
         {/* Vertical line */}

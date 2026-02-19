@@ -12,11 +12,23 @@ import StatusProgressBar from "@/components/crm/StatusProgressBar";
 import CommunicationTimeline from "@/components/crm/CommunicationTimeline";
 import ActivityTimeline from "@/components/crm/ActivityTimeline";
 import DocumentAttachments from "@/components/crm/DocumentAttachments";
+import CloseCaseModal from "@/components/crm/CloseCaseModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/Dialog/Dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/DropdownMenu/DropdownMenu";
 import { getCaseByCaseNumber } from "@/lib/mock-data/cases";
 import { getAccountById } from "@/lib/mock-data/accounts";
 import type { Account, CaseItem, CasePriority, CaseStatus, Contact } from "@/types/crm";
-
-const CASE_STATUSES: CaseStatus[] = ["New", "In Progress", "Pending", "Resolved", "Closed"];
 
 const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline" | "yellow"> = {
   Critical: "error",
@@ -84,28 +96,40 @@ export default function CaseDetailContent({
   const resolveCase = (caseNum: string) => relatedCasesMap?.get(caseNum) ?? getCaseByCaseNumber(caseNum);
   const relatedCaseNumbers = relatedCaseNumbersProp ?? caseItem.relatedCases;
   const [activeTab, setActiveTab] = React.useState("request");
-  const [statusEditOpen, setStatusEditOpen] = React.useState(false);
   const [updating, setUpdating] = React.useState(false);
+  const [communicationsExpandedIds, setCommunicationsExpandedIds] = React.useState<Set<string>>(new Set());
+  const [closeCaseModalOpen, setCloseCaseModalOpen] = React.useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = React.useState<CaseStatus | null>(null);
 
   return (
     <div className="min-w-0 w-full p-density-xl">
       <div className="mx-auto w-full min-w-0 max-w-[1400px]">
       {showBreadcrumbs && (
-        <nav
-          className="mb-density-md flex items-center gap-1.5 text-muted-foreground"
-          style={{ fontSize: "var(--tally-font-size-sm)" }}
-        >
-          <Link href="/crm/cases" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
-            Cases
-          </Link>
-          <Icon name="chevron_right" size={14} />
-          <span
-            className="font-medium text-gray-900 dark:text-gray-100"
+        <>
+          <Link
+            href="/crm/cases"
+            className="mb-density-sm flex w-fit items-center gap-1.5 text-muted-foreground transition-colors hover:text-gray-900 dark:hover:text-gray-100"
             style={{ fontSize: "var(--tally-font-size-sm)" }}
           >
-            {caseItem.caseNumber}
-          </span>
-        </nav>
+            <Icon name="arrow_back" size={18} className="shrink-0" />
+            <span>Back</span>
+          </Link>
+          <nav
+            className="mb-density-md flex items-center gap-1.5 text-muted-foreground"
+            style={{ fontSize: "var(--tally-font-size-sm)" }}
+          >
+            <Link href="/crm/cases" className="hover:text-gray-900 dark:hover:text-gray-100 transition-colors">
+              Cases
+            </Link>
+            <Icon name="chevron_right" size={14} />
+            <span
+              className="font-medium text-gray-900 dark:text-gray-100"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
+              {caseItem.caseNumber}
+            </span>
+          </nav>
+        </>
       )}
 
       {/* Header */}
@@ -143,21 +167,18 @@ export default function CaseDetailContent({
             </p>
           </div>
           <div className="flex shrink-0 items-start gap-2">
-            {onUpdateCase && (
-              <Button
-                variant="outline"
-                size="md"
-                className="gap-1.5"
-                disabled={updating}
-                onClick={() => setStatusEditOpen((v) => !v)}
-              >
-                <Icon name="edit" size="var(--tally-icon-size-sm)" />
-                Edit
-              </Button>
-            )}
             <Button variant="outline" size="md" className="gap-1.5">
               <Icon name="person_add" size="var(--tally-icon-size-sm)" />
               Assign
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              className="gap-1.5"
+              onClick={() => setCloseCaseModalOpen(true)}
+            >
+              <Icon name="lock" size="var(--tally-icon-size-sm)" />
+              Close Case
             </Button>
             {onDeleteCase && (
               <Button
@@ -184,42 +205,24 @@ export default function CaseDetailContent({
           </div>
         </div>
 
-        {/* Inline status edit (when onUpdateCase and statusEditOpen) */}
-        {onUpdateCase && statusEditOpen && (
-          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/50">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</span>
-            <select
-              id="case-status-edit"
-              defaultValue={caseItem.status}
-              className="rounded-md border border-border bg-white px-3 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
-              onChange={(e) => {
-                const newStatus = e.target.value as CaseStatus;
-                setUpdating(true);
-                Promise.resolve(onUpdateCase({ status: newStatus })).finally(() => {
-                  setUpdating(false);
-                  setStatusEditOpen(false);
-                });
-              }}
-            >
-              {CASE_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-            <Button variant="outline" size="sm" onClick={() => setStatusEditOpen(false)}>
-              Cancel
-            </Button>
-          </div>
-        )}
-
-        {/* Status bar and SLA */}
-        <div className="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        {/* Status bar and SLA — stack progress bar above SLA on small viewports */}
+        <div className="mt-4 flex min-w-0 flex-col items-stretch justify-between gap-4 rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900 sm:flex-row sm:items-center">
           <StatusProgressBar
             currentStatus={caseItem.status}
-            className="min-w-0 flex-1"
+            className="min-w-0 w-full flex-1 sm:min-w-0"
+            onStatusChange={
+              onUpdateCase
+                ? (newStatus) => {
+                    if (newStatus === "Closed") {
+                      setCloseCaseModalOpen(true);
+                    } else {
+                      setPendingStatusChange(newStatus);
+                    }
+                  }
+                : undefined
+            }
           />
-          <div className="flex shrink-0 items-center gap-4 border-border dark:border-gray-700 sm:border-l sm:pl-4">
+          <div className="flex w-full shrink-0 items-center justify-end gap-4 border-t border-border pt-4 dark:border-gray-700 sm:w-auto sm:justify-end sm:border-t-0 sm:border-l sm:pt-0 sm:pl-4">
             <div className="text-right">
               <p
                 className="font-medium uppercase tracking-wide text-muted-foreground"
@@ -401,7 +404,104 @@ export default function CaseDetailContent({
 
         <TabsContent value="communications" className="mt-0 w-full">
           <div className="w-full rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-            <CommunicationTimeline communications={caseItem.communications} />
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className="inline-flex items-center gap-2 rounded-md bg-[#006180] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0091BF] dark:bg-[#0091BF] dark:hover:bg-[#00C1FF]"
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  >
+                    Actions
+                    <Icon name="expand_more" size={16} className="shrink-0" />
+                  </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[12rem]">
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="edit" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Note</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="mail" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Email</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="call" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Call</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="event" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Meeting</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => onOpenLinkModal?.()}
+                    className="gap-2 text-left"
+                  >
+                    <Icon name="link" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Link case</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="attach_file" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Add attachment</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="event" size={16} className="shrink-0 text-muted-foreground" />
+                    <span className="whitespace-nowrap">Schedule follow-up</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="print" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Print</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="file_download" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Export</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="pin" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Send Pin</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="gap-2 text-left">
+                    <Icon name="send" size={16} className="shrink-0 text-muted-foreground" />
+                    <span>Send Pin Email</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Icon name="edit" size={16} />
+                  Compose
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <Icon name="reply" size={16} />
+                  Reply
+                </Button>
+                {caseItem.communications.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const allIds = new Set(caseItem.communications.map((c) => c.id));
+                      const allExpanded = allIds.size > 0 && communicationsExpandedIds.size >= allIds.size;
+                      setCommunicationsExpandedIds(allExpanded ? new Set() : allIds);
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-transparent px-0 py-1 text-sm font-medium text-[#2C365D] transition-colors hover:underline dark:text-[#7c8cb8]"
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  >
+                    <Icon
+                      name={communicationsExpandedIds.size >= caseItem.communications.length ? "unfold_less" : "unfold_more"}
+                      size={16}
+                      className="shrink-0"
+                    />
+                    {communicationsExpandedIds.size >= caseItem.communications.length && caseItem.communications.length > 0
+                      ? "Collapse All"
+                      : "Expand All"}
+                  </button>
+                )}
+              </div>
+            </div>
+            <CommunicationTimeline
+              communications={caseItem.communications}
+              expandedIds={communicationsExpandedIds}
+              onExpandedIdsChange={setCommunicationsExpandedIds}
+            />
             {caseItem.communications.length === 0 && (
               <p
                 className="py-8 text-center text-muted-foreground"
@@ -544,6 +644,67 @@ export default function CaseDetailContent({
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Confirmation when changing status via the progress bar (except Closed) */}
+      <Dialog
+        open={pendingStatusChange !== null}
+        onOpenChange={(open) => !open && setPendingStatusChange(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">Change status</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to change the case status to{" "}
+            <span className="font-medium text-gray-900 dark:text-gray-100">
+              {pendingStatusChange}
+            </span>
+            ?
+          </p>
+          <DialogFooter className="gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setPendingStatusChange(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={updating}
+              className="bg-[#006180] text-white hover:bg-[#0091BF] dark:bg-[#0091BF] dark:hover:bg-[#00C1FF]"
+              onClick={() => {
+                if (pendingStatusChange == null || !onUpdateCase) return;
+                setUpdating(true);
+                Promise.resolve(onUpdateCase({ status: pendingStatusChange })).finally(
+                  () => {
+                    setUpdating(false);
+                    setPendingStatusChange(null);
+                  }
+                );
+              }}
+            >
+              {updating ? "Updating…" : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <CloseCaseModal
+        open={closeCaseModalOpen}
+        onOpenChange={setCloseCaseModalOpen}
+        caseItem={caseItem}
+        account={account}
+        onCloseCase={(payload) => {
+          if (onUpdateCase) {
+            setUpdating(true);
+            Promise.resolve(
+              onUpdateCase({
+                status: "Closed",
+                resolution: `${payload.closeReason} · ${payload.resolutionType} (Closed at ${payload.closedAt.toLocaleString()} by ${payload.closedBy})`,
+              })
+            ).finally(() => setUpdating(false));
+          }
+        }}
+      />
       </div>
     </div>
   );

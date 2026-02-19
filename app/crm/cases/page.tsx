@@ -516,17 +516,24 @@ export default function CaseListPage() {
                   );
                 }
                 const relatedCaseNumbers = getRelatedCases(caseItem.id);
-                const handleTabUpdate = (payload: Partial<CaseItem>) =>
-                  fetch(`/api/cases/${caseItem.id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                  }).then((r) => {
-                    if (!r.ok) return;
-                    return r.json().then((updated: CaseItem) =>
-                      setCases((prev) => prev.map((c) => (c.id === caseItem.id ? updated : c)))
-                    );
-                  });
+                const handleTabUpdate = (payload: Partial<CaseItem>) => {
+                  if (useDb) {
+                    return fetch(`/api/cases/${caseItem.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    }).then((r) => {
+                      if (!r.ok) return;
+                      return r.json().then((updated: CaseItem) =>
+                        setCases((prev) => prev.map((c) => (c.id === caseItem.id ? updated : c)))
+                      );
+                    });
+                  }
+                  setCases((prev) =>
+                    prev.map((c) => (c.id === caseItem.id ? { ...c, ...payload } : c))
+                  );
+                  return Promise.resolve();
+                };
                 const handleTabDelete = () => {
                   if (!confirm("Delete this case? This cannot be undone.")) return;
                   fetch(`/api/cases/${caseItem.id}`, { method: "DELETE" }).then((r) => {
@@ -553,7 +560,7 @@ export default function CaseListPage() {
                         showOpenInFullPage
                         relatedCaseNumbers={relatedCaseNumbers}
                         onOpenLinkModal={() => setLinkModalOpen(true)}
-                        onUpdateCase={useDb ? handleTabUpdate : undefined}
+                        onUpdateCase={handleTabUpdate}
                         onDeleteCase={useDb ? handleTabDelete : undefined}
                       />
                     </div>

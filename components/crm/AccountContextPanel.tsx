@@ -5,6 +5,12 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/ui/icon";
 import Badge from "@/components/Badge/Badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/DropdownMenu/DropdownMenu";
 import SLAIndicator from "@/components/crm/SLAIndicator";
 import { getCaseByCaseNumber } from "@/lib/mock-data/cases";
 import { getAccountById } from "@/lib/mock-data/accounts";
@@ -70,6 +76,13 @@ export default function AccountContextPanel({
         ? "info"
         : "secondary";
 
+  const QUICK_ACTIONS = [
+    { label: "Note", icon: "edit" as const },
+    { label: "Email", icon: "mail" as const },
+    { label: "Call", icon: "call" as const },
+    { label: "Meeting", icon: "event" as const },
+  ] as const;
+
   return (
     <aside
       className={cn(
@@ -104,6 +117,65 @@ export default function AccountContextPanel({
               {account.accountNumber}
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Quick actions — Note, Email, Call, Meeting + more (single row) */}
+      <div className="border-b border-border px-density-md py-density-sm dark:border-gray-800">
+        <div className="flex w-full flex-nowrap items-center justify-between gap-0.5">
+          {QUICK_ACTIONS.map(({ label, icon }) => (
+            <button
+              key={label}
+              type="button"
+              className="flex shrink-0 flex-col items-center gap-0.5 rounded-density-sm p-1.5 text-muted-foreground transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+              title={label}
+            >
+              <Icon name={icon} size={18} />
+              <span style={{ fontSize: "var(--tally-font-size-xs)" }}>{label}</span>
+            </button>
+          ))}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-density-sm p-1.5 text-muted-foreground transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+              aria-label="More options"
+            >
+              <Icon name="more_horiz" size={18} />
+              <span style={{ fontSize: "var(--tally-font-size-xs)" }}>More</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[12rem]">
+              <DropdownMenuItem
+                onClick={() => onOpenLinkModal?.()}
+                className="gap-2 text-left"
+              >
+                <Icon name="link" size={16} className="shrink-0 text-muted-foreground" />
+                <span>Link case</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-left">
+                <Icon name="attach_file" size={16} className="shrink-0 text-muted-foreground" />
+                <span>Add attachment</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-left">
+                <Icon name="event" size={16} className="shrink-0 text-muted-foreground" />
+                <span className="whitespace-nowrap">Schedule follow-up</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-left">
+                <Icon name="print" size={16} className="shrink-0 text-muted-foreground" />
+                <span>Print</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-left">
+                <Icon name="file_download" size={16} className="shrink-0 text-muted-foreground" />
+                <span>Export</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-left">
+                <Icon name="pin" size={16} className="shrink-0 text-muted-foreground" />
+                <span>Send Pin</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="gap-2 text-left">
+                <Icon name="send" size={16} className="shrink-0 text-muted-foreground" />
+                <span>Send Pin Email</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

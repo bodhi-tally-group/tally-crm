@@ -59,14 +59,17 @@ export default function CaseDetailPage() {
 
   const handleUpdate = React.useCallback(
     (payload: Partial<CaseItem>) => {
-      if (!useDb || !caseId) return Promise.resolve();
-      return fetch(`/api/cases/${caseId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }).then((r) => {
-        if (r.ok) return r.json().then(setCaseItem);
-      });
+      if (useDb && caseId) {
+        return fetch(`/api/cases/${caseId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }).then((r) => {
+          if (r.ok) return r.json().then(setCaseItem);
+        });
+      }
+      setCaseItem((prev) => (prev ? { ...prev, ...payload } : null));
+      return Promise.resolve();
     },
     [useDb, caseId]
   );
@@ -132,7 +135,7 @@ export default function CaseDetailPage() {
           showBreadcrumbs
           relatedCaseNumbers={relatedCaseNumbersList}
           onOpenLinkModal={() => setLinkModalOpen(true)}
-          onUpdateCase={useDb ? handleUpdate : undefined}
+          onUpdateCase={handleUpdate}
           onDeleteCase={useDb ? handleDelete : undefined}
           relatedCasesMap={useDb ? relatedCasesMap : undefined}
         />
