@@ -18,6 +18,7 @@ const activityIcons: Record<string, { icon: string; color: string }> = {
   Created: { icon: "add_circle", color: "text-[#008000] bg-green-50 dark:bg-green-950/30" },
   "Email Sent": { icon: "send", color: "text-[#008000] bg-green-50 dark:bg-green-950/30" },
   "Email Received": { icon: "inbox", color: "text-[#0074C4] bg-blue-50 dark:bg-blue-950/30" },
+  "Call Logged": { icon: "call", color: "text-[#2C365D] bg-indigo-50 dark:bg-indigo-950/30" },
 };
 
 export default function ActivityTimeline({

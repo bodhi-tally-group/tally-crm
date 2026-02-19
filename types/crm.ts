@@ -143,7 +143,8 @@ export interface Activity {
     | "Created"
     | "Email Sent"
     | "Email Received"
-    | "Note Added";
+    | "Note Added"
+    | "Call Logged";
   description: string;
   user: string;
   timestamp: string;

@@ -19,6 +19,7 @@ export default function CaseDetailPage() {
   const caseId = params.id as string;
   const [linkModalOpen, setLinkModalOpen] = React.useState(false);
   const [notePanelOpen, setNotePanelOpen] = React.useState(false);
+  const [callLogPanelOpen, setCallLogPanelOpen] = React.useState(false);
   const [caseItem, setCaseItem] = React.useState<CaseItem | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [notFound, setNotFound] = React.useState(false);
@@ -127,6 +128,7 @@ export default function CaseDetailPage() {
         currentCaseId={caseItem.id}
         onOpenLinkModal={() => setLinkModalOpen(true)}
         onOpenNotePanel={() => setNotePanelOpen(true)}
+        onOpenCallLogPanel={() => setCallLogPanelOpen(true)}
         relatedCasesMap={useDb ? relatedCasesMap : undefined}
       />
 
@@ -138,11 +140,14 @@ export default function CaseDetailPage() {
           relatedCaseNumbers={relatedCaseNumbersList}
           onOpenLinkModal={() => setLinkModalOpen(true)}
           onOpenNotePanel={() => setNotePanelOpen(true)}
+          onOpenCallLogPanel={() => setCallLogPanelOpen(true)}
           onUpdateCase={handleUpdate}
           onDeleteCase={useDb ? handleDelete : undefined}
           relatedCasesMap={useDb ? relatedCasesMap : undefined}
           notePanelOpen={notePanelOpen}
           onCloseNotePanel={() => setNotePanelOpen(false)}
+          callLogPanelOpen={callLogPanelOpen}
+          onCloseCallLogPanel={() => setCallLogPanelOpen(false)}
         />
       </div>
 

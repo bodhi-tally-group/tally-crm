@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -9,6 +9,11 @@ import {
   CardContent,
 } from "@/components/Card/Card";
 import Button from "@/components/Button/Button";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/Popover/Popover";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +60,26 @@ const TIMELINE_ITEMS = [
   },
 ];
 
-type FilterType = "all" | "call" | "email" | "meeting" | "note";
+type FilterType = "call" | "email" | "meeting" | "note";
+
+const ACTION_TYPE_OPTIONS: { value: FilterType; label: string }[] = [
+  { value: "call", label: "Call" },
+  { value: "email", label: "Email" },
+  { value: "meeting", label: "Meeting" },
+  { value: "note", label: "Note" },
+];
+
+const UNASSIGNED_LABEL = "—";
+
+/** Unique users from timeline items (meta.user); items without user map to UNASSIGNED_LABEL */
+function getUniqueUsers(items: typeof TIMELINE_ITEMS): string[] {
+  const set = new Set<string>();
+  items.forEach((item) => {
+    const user = "user" in item.meta ? (item.meta as { user?: string }).user : undefined;
+    set.add(user ?? UNASSIGNED_LABEL);
+  });
+  return Array.from(set).sort((a, b) => (a === UNASSIGNED_LABEL ? 1 : b === UNASSIGNED_LABEL ? -1 : a.localeCompare(b)));
+}
 
 const TIMELINE_ICON_CLASSES = {
   call: "bg-[#2C365D]/10 text-[#2C365D] dark:bg-[#7c8cb8]/20 dark:text-[#7c8cb8]",
@@ -73,12 +97,61 @@ const TIMELINE_TYPE_LABEL_CLASSES = {
 
 export default function CommunicationsPage() {
   const router = useRouter();
-  const [typeFilter, setTypeFilter] = useState<FilterType>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [selectedTypes, setSelectedTypes] = useState<Set<FilterType>>(new Set());
 
-  const filteredItems =
-    typeFilter === "all"
-      ? TIMELINE_ITEMS
-      : TIMELINE_ITEMS.filter((item) => item.type === typeFilter);
+  const uniqueUsers = useMemo(() => getUniqueUsers(TIMELINE_ITEMS), []);
+
+  const filteredItems = useMemo(() => {
+    let list = TIMELINE_ITEMS;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          item.customer.toLowerCase().includes(q) ||
+          item.summary.toLowerCase().includes(q) ||
+          item.typeLabel.toLowerCase().includes(q)
+      );
+    }
+
+    if (selectedTypes.size > 0) {
+      list = list.filter((item) => selectedTypes.has(item.type));
+    }
+
+    if (selectedUsers.size > 0) {
+      list = list.filter((item) => {
+        const user = "user" in item.meta ? (item.meta as { user?: string }).user : undefined;
+        const key = user ?? UNASSIGNED_LABEL;
+        return selectedUsers.has(key);
+      });
+    }
+
+    return list;
+  }, [searchQuery, selectedTypes, selectedUsers]);
+
+  const toggleUser = (user: string) => {
+    setSelectedUsers((prev) => {
+      const next = new Set(prev);
+      if (next.has(user)) next.delete(user);
+      else next.add(user);
+      return next;
+    });
+  };
+
+  const toggleType = (type: FilterType) => {
+    setSelectedTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  };
+
+  const clearUserFilter = () => setSelectedUsers(new Set());
+  const clearTypeFilter = () => setSelectedTypes(new Set());
 
   return (
     <div className="min-w-0 flex-1 overflow-y-auto">
@@ -138,6 +211,131 @@ export default function CommunicationsPage() {
           ))}
         </div>
 
+        {/* Search and filters — between Actions and Compose */}
+        <section
+          aria-label="Search and filter communications"
+          className="min-h-[52px] flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800/60"
+          style={{ marginBottom: "var(--tally-spacing-lg, 16px)" }}
+        >
+          <span
+            className="sr-only sm:not-sr-only sm:mr-1 sm:inline-block sm:text-muted-foreground"
+            style={{ fontSize: "var(--tally-font-size-xs)" }}
+          >
+            Search & filter:
+          </span>
+          <div className="relative w-full min-w-0 sm:w-52">
+            <Icon
+              name="search"
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              type="search"
+              placeholder="Search communications..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={cn(
+                "h-9 w-full rounded-lg border border-border bg-white pl-9 pr-3 py-2 text-sm text-gray-900 placeholder:text-muted-foreground",
+                "focus:outline-none focus:ring-2 focus:ring-[#2C365D] focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400"
+              )}
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+              aria-label="Search communications"
+            />
+          </div>
+
+          <Popover>
+            <PopoverTrigger
+              className={cn(
+                "inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-sm text-gray-700 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700",
+                selectedUsers.size > 0 && "border-[#2C365D] bg-[#2C365D]/5 dark:border-[#7c8cb8] dark:bg-[#7c8cb8]/10"
+              )}
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
+              <Icon name="person" size={16} className="shrink-0 text-muted-foreground" />
+              <span>User</span>
+              {selectedUsers.size > 0 && (
+                <span className="rounded bg-[#2C365D] px-1.5 py-0 text-xs text-white dark:bg-[#7c8cb8]">
+                  {selectedUsers.size}
+                </span>
+              )}
+              <Icon name="expand_more" size={16} className="shrink-0 text-muted-foreground" />
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 p-2">
+              <div className="max-h-64 overflow-y-auto">
+                {uniqueUsers.map((user) => (
+                  <label
+                    key={user}
+                    className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedUsers.has(user)}
+                      onChange={() => toggleUser(user)}
+                      className="h-4 w-4 rounded border-border text-[#2C365D] focus:ring-[#2C365D] dark:border-gray-600 dark:bg-gray-700"
+                    />
+                    <span className="text-sm text-gray-900 dark:text-gray-100">{user}</span>
+                  </label>
+                ))}
+              </div>
+              {selectedUsers.size > 0 && (
+                <button
+                  type="button"
+                  onClick={clearUserFilter}
+                  className="mt-2 w-full rounded py-1.5 text-center text-sm font-medium text-[#2C365D] hover:bg-gray-100 dark:text-[#7c8cb8] dark:hover:bg-gray-800"
+                >
+                  Clear
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger
+              className={cn(
+                "inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-sm text-gray-700 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700",
+                selectedTypes.size > 0 && "border-[#2C365D] bg-[#2C365D]/5 dark:border-[#7c8cb8] dark:bg-[#7c8cb8]/10"
+              )}
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
+              <Icon name="filter_list" size={16} className="shrink-0 text-muted-foreground" />
+              <span>Type</span>
+              {selectedTypes.size > 0 && (
+                <span className="rounded bg-[#2C365D] px-1.5 py-0 text-xs text-white dark:bg-[#7c8cb8]">
+                  {selectedTypes.size}
+                </span>
+              )}
+              <Icon name="expand_more" size={16} className="shrink-0 text-muted-foreground" />
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-48 p-2">
+              <div className="space-y-0.5">
+                {ACTION_TYPE_OPTIONS.map(({ value, label }) => (
+                  <label
+                    key={value}
+                    className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedTypes.has(value)}
+                      onChange={() => toggleType(value)}
+                      className="h-4 w-4 rounded border-border text-[#2C365D] focus:ring-[#2C365D] dark:border-gray-600 dark:bg-gray-700"
+                    />
+                    <span className="text-sm text-gray-900 dark:text-gray-100">{label}</span>
+                  </label>
+                ))}
+              </div>
+              {selectedTypes.size > 0 && (
+                <button
+                  type="button"
+                  onClick={clearTypeFilter}
+                  className="mt-2 w-full rounded py-1.5 text-center text-sm font-medium text-[#2C365D] hover:bg-gray-100 dark:text-[#7c8cb8] dark:hover:bg-gray-800"
+                >
+                  Clear
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
+        </section>
+
         <p
           className="mb-density-xl text-muted-foreground"
           style={{ fontSize: "var(--tally-font-size-xs)" }}
@@ -149,27 +347,23 @@ export default function CommunicationsPage() {
         <div className="grid grid-cols-1 gap-density-lg lg:grid-cols-[1fr_350px]">
           {/* Left: Recent Activity */}
           <Card className="shadow-none">
-            <div className="flex items-center justify-between border-b border-border p-density-lg dark:border-gray-700">
+            <div className="border-b border-border p-density-lg dark:border-gray-700">
               <h3
                 className="font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100"
                 style={{ fontSize: "var(--tally-font-size-sm)" }}
               >
                 Recent Activity
               </h3>
-              <select
-                className="rounded-density-md border border-border bg-white py-1.5 px-3 outline-none focus:border-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                style={{ fontSize: "var(--tally-font-size-sm)" }}
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as FilterType)}
-              >
-                <option value="all">All Types</option>
-                <option value="call">Call</option>
-                <option value="email">Email</option>
-                <option value="meeting">Meeting</option>
-                <option value="note">Note</option>
-              </select>
             </div>
             <div className="p-density-lg">
+              {filteredItems.length === 0 ? (
+                <p
+                  className="py-8 text-center text-muted-foreground"
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                >
+                  No communications match your filters.
+                </p>
+              ) : (
               <div className="relative flex flex-col before:absolute before:bottom-0 before:left-[15px] before:top-7 before:w-px before:bg-gray-200 before:content-[''] dark:before:bg-gray-700">
                 {filteredItems.map((item) => (
                   <div
@@ -261,6 +455,7 @@ export default function CommunicationsPage() {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </Card>
 
