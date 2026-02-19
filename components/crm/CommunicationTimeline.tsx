@@ -27,9 +27,26 @@ const typeIcons: Record<string, string> = {
   System: "settings",
 };
 
+const typeLoggedLabel: Record<string, string> = {
+  Email: "Logged Email",
+  Phone: "Logged Call",
+  Note: "Logged Note",
+  System: "Logged",
+};
+
 function formatTimestampDisplay(ts: string): string {
   const d = new Date(ts);
-  return Number.isFinite(d.getTime()) ? d.toLocaleString() : ts;
+  if (!Number.isFinite(d.getTime())) return ts;
+  return new Intl.DateTimeFormat("en-AU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Australia/Sydney",
+    timeZoneName: "short",
+  }).format(d);
 }
 
 export default function CommunicationTimeline({
@@ -74,30 +91,28 @@ export default function CommunicationTimeline({
 
   return (
     <div className={cn("space-y-1", className)}>
-      {/* Timeline */}
-      <div className="relative">
-        {/* Vertical line */}
-        <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
+      {sorted.map((comm) => {
+        const isExpanded = expandedIds.has(comm.id);
+        const dirConfig = directionConfig[comm.direction];
 
-        {sorted.map((comm) => {
-          const isExpanded = expandedIds.has(comm.id);
-          const dirConfig = directionConfig[comm.direction];
-
-          return (
-            <div key={comm.id} className="relative pb-4 pl-12">
-              {/* Timeline dot – aligned with vertical line at left-4 */}
-              <div className="absolute left-0.5 top-0 flex h-8 w-8 items-center justify-center rounded-full bg-white dark:bg-gray-950 text-muted-foreground">
-                <Icon name={typeIcons[comm.type] ?? "mail"} size={22} />
-              </div>
-
-              {/* Communication card */}
-              <div className="rounded-lg border border-border bg-white dark:border-gray-700 dark:bg-gray-900">
-                {/* Header */}
-                <button
-                  type="button"
-                  onClick={() => toggleExpanded(comm.id)}
-                  className="flex w-full items-start justify-between gap-2 px-3 py-2.5 text-left"
-                >
+        return (
+          <div key={comm.id} className="pb-4 last:pb-0">
+            <div className="rounded-lg border border-border bg-white dark:border-gray-700 dark:bg-gray-900">
+              {/* Header */}
+              <button
+                type="button"
+                onClick={() => toggleExpanded(comm.id)}
+                className="flex w-full flex-col gap-1 px-3 py-2.5 text-left"
+              >
+                <div className="flex w-full items-center gap-2">
+                  <div className="flex shrink-0 items-center text-muted-foreground">
+                    <Icon name={typeIcons[comm.type] ?? "mail"} size={20} />
+                  </div>
+                  <span className="text-[11px] text-muted-foreground">
+                    {typeLoggedLabel[comm.type] ?? "Logged"} by {comm.loggedBy ?? "—"}
+                  </span>
+                </div>
+                <div className="flex w-full items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -131,11 +146,12 @@ export default function CommunicationTimeline({
                       className="text-gray-400"
                     />
                   </div>
-                </button>
+                </div>
+              </button>
 
-                {/* Expanded body */}
-                {isExpanded && (
-                  <div className="border-t border-border px-3 py-3 dark:border-gray-700">
+              {/* Expanded body */}
+              {isExpanded && (
+                <div className="border-t border-border px-3 py-3 dark:border-gray-700">
                     {/* Metadata */}
                     <div className="mb-3 space-y-0.5 text-[11px] text-muted-foreground">
                       <p>
@@ -184,11 +200,10 @@ export default function CommunicationTimeline({
                     )}
                   </div>
                 )}
-              </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

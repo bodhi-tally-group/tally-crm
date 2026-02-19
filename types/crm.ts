@@ -126,6 +126,8 @@ export interface Communication {
   body: string;
   timestamp: string;
   attachments: Attachment[];
+  /** User who logged this communication (e.g. for "Logged Call by X") */
+  loggedBy?: string;
 }
 
 // ── Activity ────────────────────────────────────────────────────────────────

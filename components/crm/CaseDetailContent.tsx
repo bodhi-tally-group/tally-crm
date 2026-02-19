@@ -427,8 +427,7 @@ export default function CaseDetailContent({
         </TabsContent>
 
         <TabsContent value="communications" className="mt-0 w-full">
-          <div className="w-full rounded-lg border border-border bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger
@@ -523,21 +522,20 @@ export default function CaseDetailContent({
                   </button>
                 )}
               </div>
-            </div>
-            <CommunicationTimeline
-              communications={caseItem.communications}
-              expandedIds={communicationsExpandedIds}
-              onExpandedIdsChange={setCommunicationsExpandedIds}
-            />
-            {caseItem.communications.length === 0 && (
-              <p
-                className="py-8 text-center text-muted-foreground"
-                style={{ fontSize: "var(--tally-font-size-sm)" }}
-              >
-                No communications recorded for this case.
-              </p>
-            )}
           </div>
+          <CommunicationTimeline
+            communications={caseItem.communications}
+            expandedIds={communicationsExpandedIds}
+            onExpandedIdsChange={setCommunicationsExpandedIds}
+          />
+          {caseItem.communications.length === 0 && (
+            <p
+              className="py-8 text-center text-muted-foreground"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
+              No communications recorded for this case.
+            </p>
+          )}
         </TabsContent>
 
         <TabsContent value="related" className="mt-0 w-full">
