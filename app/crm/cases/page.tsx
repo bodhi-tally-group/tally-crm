@@ -625,7 +625,7 @@ export default function CaseListPage() {
         </>
       )}
 
-      {/* Right-click context menu: Open Case in New Tab */}
+      {/* Right-click context menu: Open in new tab / Copy case number */}
       {contextMenu.open &&
         typeof document !== "undefined" &&
         createPortal(
@@ -643,6 +643,20 @@ export default function CaseListPage() {
               }}
             >
               Open Case in New Browser tab
+            </button>
+            <button
+              type="button"
+              className="relative flex w-full cursor-default select-none items-center justify-start rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+              onClick={() => {
+                const caseNumber =
+                  cases.find((c) => c.id === contextMenu.caseId)?.caseNumber ?? "";
+                if (caseNumber && typeof navigator?.clipboard?.writeText === "function") {
+                  navigator.clipboard.writeText(caseNumber);
+                }
+                setContextMenu((prev) => ({ ...prev, open: false }));
+              }}
+            >
+              Copy case number
             </button>
           </div>,
           document.body
