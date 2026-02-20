@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Table,
@@ -128,6 +129,13 @@ export default function CaseListPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortField, setSortField] = React.useState<SortField>("createdDate");
   const [sortDir, setSortDir] = React.useState<SortDirection>("desc");
+  const [contextMenu, setContextMenu] = React.useState<{
+    open: boolean;
+    x: number;
+    y: number;
+    caseId: string;
+  }>({ open: false, x: 0, y: 0, caseId: "" });
+  const contextMenuRef = React.useRef<HTMLDivElement>(null);
 
   // Convert vertical mouse-wheel into horizontal scroll for kanban board
   React.useEffect(() => {
@@ -144,6 +152,25 @@ export default function CaseListPage() {
     el.addEventListener("wheel", handleWheel, { passive: false });
     return () => el.removeEventListener("wheel", handleWheel);
   }, [viewMode]);
+
+  React.useEffect(() => {
+    if (!contextMenu.open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contextMenuRef.current?.contains(e.target as Node)) return;
+      setContextMenu((prev) => (prev.open ? { ...prev, open: false } : prev));
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [contextMenu.open]);
+
+  const handleCaseContextMenu = React.useCallback(
+    (e: React.MouseEvent, caseId: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({ open: true, x: e.clientX, y: e.clientY, caseId });
+    },
+    []
+  );
 
   const accountNames = React.useMemo(
     () => Array.from(new Set(mockCases.map((c) => c.accountName))).sort(),
@@ -503,6 +530,7 @@ export default function CaseListPage() {
                   status={status}
                   cases={statusCases}
                   onDrop={handleDrop}
+                  onContextMenuCase={handleCaseContextMenu}
                 />
               );
             })}
@@ -534,6 +562,7 @@ export default function CaseListPage() {
                       <Link
                         href={`/crm/cases/${caseItem.id}`}
                         className="font-medium text-[#2C365D] hover:underline dark:text-[#7c8cb8]"
+                        onContextMenu={(e) => handleCaseContextMenu(e, caseItem.id)}
                       >
                         {caseItem.caseNumber}
                       </Link>
@@ -596,6 +625,29 @@ export default function CaseListPage() {
         </>
       )}
 
+      {/* Right-click context menu: Open Case in New Tab */}
+      {contextMenu.open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={contextMenuRef}
+            className="fixed z-[100] min-w-[11rem] overflow-hidden rounded-md border border-border bg-white p-1 text-gray-900 shadow-md dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <button
+              type="button"
+              className="relative flex w-full cursor-default select-none items-center justify-start rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+              onClick={() => {
+                window.open(`/crm/cases/${contextMenu.caseId}`, "_blank");
+                setContextMenu((prev) => ({ ...prev, open: false }));
+              }}
+            >
+              Open Case in New Browser tab
+            </button>
+          </div>,
+          document.body
+        )}
+
       {/* New Case Modal */}
       {modalOpen && (
         <NewCaseModal
@@ -617,10 +669,12 @@ function CaseKanbanColumn({
   status,
   cases: columnCases,
   onDrop,
+  onContextMenuCase,
 }: {
   status: CaseStatus;
   cases: CaseItem[];
   onDrop: (caseId: string, newStatus: CaseStatus) => void;
+  onContextMenuCase?: (e: React.MouseEvent, caseId: string) => void;
 }) {
   const [isDragOver, setIsDragOver] = React.useState(false);
 
@@ -663,7 +717,11 @@ function CaseKanbanColumn({
       {/* Cards */}
       <div className="flex min-h-[120px] flex-1 flex-col gap-2 overflow-y-auto p-2">
         {columnCases.map((c) => (
-          <CaseKanbanCard key={c.id} caseItem={c} />
+          <CaseKanbanCard
+            key={c.id}
+            caseItem={c}
+            onContextMenuCase={onContextMenuCase}
+          />
         ))}
         {columnCases.length === 0 && (
           <div className="flex flex-1 items-center justify-center py-8 text-sm text-muted-foreground">
@@ -677,7 +735,13 @@ function CaseKanbanColumn({
 
 /* ─── Kanban Card ─────────────────────────────────────────────────────── */
 
-function CaseKanbanCard({ caseItem }: { caseItem: CaseItem }) {
+function CaseKanbanCard({
+  caseItem,
+  onContextMenuCase,
+}: {
+  caseItem: CaseItem;
+  onContextMenuCase?: (e: React.MouseEvent, caseId: string) => void;
+}) {
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData("text/plain", caseItem.id);
     e.dataTransfer.effectAllowed = "move";
@@ -692,7 +756,14 @@ function CaseKanbanCard({ caseItem }: { caseItem: CaseItem }) {
     >
       {/* Case number + priority */}
       <div className="flex items-center justify-between">
-        <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+        <p
+          className="truncate text-sm font-medium text-gray-900 dark:text-gray-100"
+          onContextMenu={
+            onContextMenuCase
+              ? (e) => onContextMenuCase(e, caseItem.id)
+              : undefined
+          }
+        >
           {caseItem.caseNumber}
         </p>
         <Badge
