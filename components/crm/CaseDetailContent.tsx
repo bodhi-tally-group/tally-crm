@@ -503,7 +503,7 @@ export default function CaseDetailContent({
           </div>
         </TabsContent>
 
-        <TabsContent value="communications" className="mt-0 w-full">
+        <TabsContent value="communications" className="mt-0 min-w-0 w-full overflow-hidden">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
             {/* Left: filter button group — compact, matches right-side controls and project tabs */}
             <nav

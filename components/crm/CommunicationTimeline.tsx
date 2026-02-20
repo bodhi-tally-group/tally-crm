@@ -90,14 +90,14 @@ export default function CommunicationTimeline({
     .map((x) => x.c);
 
   return (
-    <div className={cn("space-y-1", className)}>
+    <div className={cn("min-w-0 w-full max-w-full overflow-hidden space-y-1", className)}>
       {sorted.map((comm) => {
         const isExpanded = expandedIds.has(comm.id);
         const dirConfig = directionConfig[comm.direction];
 
         return (
-          <div key={comm.id} className="pb-4 last:pb-0">
-            <div className="rounded-lg border border-border bg-white dark:border-gray-700 dark:bg-gray-900">
+          <div key={comm.id} className="min-w-0 max-w-full pb-4 last:pb-0">
+            <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-border bg-white dark:border-gray-700 dark:bg-gray-900">
               {/* Header */}
               <button
                 type="button"
@@ -151,7 +151,7 @@ export default function CommunicationTimeline({
 
               {/* Expanded body */}
               {isExpanded && (
-                <div className="border-t border-border px-5 py-3 dark:border-gray-700">
+                <div className="min-w-0 max-w-full overflow-x-hidden border-t border-border px-5 py-3 dark:border-gray-700">
                     {/* Metadata */}
                     <div className="mb-3 space-y-0.5 text-[11px] text-muted-foreground">
                       <p>
@@ -166,14 +166,14 @@ export default function CommunicationTimeline({
                       </p>
                     </div>
 
-                    {/* Body (Notes may contain HTML) */}
+                    {/* Body (Notes may contain HTML) — comm-note-body keeps text inside container */}
                     {comm.type === "Note" && /<[a-zA-Z]/.test(comm.body) ? (
                       <div
-                        className="prose prose-sm max-w-none text-sm leading-relaxed text-gray-700 dark:prose-invert dark:text-gray-300"
+                        className="comm-note-body text-sm leading-relaxed text-gray-700 dark:text-gray-300"
                         dangerouslySetInnerHTML={{ __html: comm.body }}
                       />
                     ) : (
-                      <div className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                      <div className="comm-note-body whitespace-pre-wrap text-sm leading-relaxed text-gray-700 dark:text-gray-300">
                         {comm.body}
                       </div>
                     )}

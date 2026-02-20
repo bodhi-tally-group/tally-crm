@@ -98,6 +98,21 @@ body {
   background: #6b7280;
 }
 
+/* Communication note body: keep text inside the Logged Note container (no overflow) */
+.comm-note-body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.comm-note-body * {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 /* Material Symbols Outlined (icons) */
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
