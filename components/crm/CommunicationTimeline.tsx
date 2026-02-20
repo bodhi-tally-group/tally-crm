@@ -102,7 +102,7 @@ export default function CommunicationTimeline({
               <button
                 type="button"
                 onClick={() => toggleExpanded(comm.id)}
-                className="flex w-full flex-col gap-1 px-3 py-2.5 text-left"
+                className="flex w-full flex-col gap-1 px-5 py-2.5 text-left"
               >
                 <div className="flex w-full items-center gap-2">
                   <div className="flex shrink-0 items-center text-muted-foreground">
@@ -151,7 +151,7 @@ export default function CommunicationTimeline({
 
               {/* Expanded body */}
               {isExpanded && (
-                <div className="border-t border-border px-3 py-3 dark:border-gray-700">
+                <div className="border-t border-border px-5 py-3 dark:border-gray-700">
                     {/* Metadata */}
                     <div className="mb-3 space-y-0.5 text-[11px] text-muted-foreground">
                       <p>

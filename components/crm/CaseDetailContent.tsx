@@ -145,16 +145,11 @@ export default function CaseDetailContent({
   const [communicationsExpandedIds, setCommunicationsExpandedIds] = React.useState<Set<string>>(new Set());
   const [communicationsSearchQuery, setCommunicationsSearchQuery] = React.useState("");
   const [communicationsSelectedUsers, setCommunicationsSelectedUsers] = React.useState<Set<string>>(new Set());
-  const [communicationsSelectedTypes, setCommunicationsSelectedTypes] = React.useState<Set<Communication["type"]>>(new Set());
+  type CommFilterTab = "all" | "notes" | "emails" | "calls";
+  const [communicationsFilterTab, setCommunicationsFilterTab] = React.useState<CommFilterTab>("all");
   const [closeCaseModalOpen, setCloseCaseModalOpen] = React.useState(false);
   const [pendingStatusChange, setPendingStatusChange] = React.useState<CaseStatus | null>(null);
 
-  const COMM_TYPE_OPTIONS: { value: Communication["type"]; label: string }[] = [
-    { value: "Email", label: "Email" },
-    { value: "Phone", label: "Call" },
-    { value: "Note", label: "Note" },
-    { value: "System", label: "System" },
-  ];
   const COMM_UNASSIGNED_LABEL = "—";
   const communicationsUniqueUsers = React.useMemo(() => {
     const set = new Set<string>();
@@ -165,6 +160,15 @@ export default function CaseDetailContent({
   }, [caseItem.communications]);
   const filteredCommunications = React.useMemo(() => {
     let list = caseItem.communications;
+    if (communicationsFilterTab !== "all") {
+      const typeByTab: Record<Exclude<CommFilterTab, "all">, Communication["type"]> = {
+        notes: "Note",
+        emails: "Email",
+        calls: "Phone",
+      };
+      const tabType = typeByTab[communicationsFilterTab];
+      list = list.filter((c) => c.type === tabType);
+    }
     if (communicationsSearchQuery.trim()) {
       const q = communicationsSearchQuery.trim().toLowerCase();
       list = list.filter(
@@ -175,9 +179,6 @@ export default function CaseDetailContent({
           c.to.toLowerCase().includes(q)
       );
     }
-    if (communicationsSelectedTypes.size > 0) {
-      list = list.filter((c) => communicationsSelectedTypes.has(c.type));
-    }
     if (communicationsSelectedUsers.size > 0) {
       list = list.filter((c) => {
         const user = c.loggedBy?.trim() || COMM_UNASSIGNED_LABEL;
@@ -187,8 +188,8 @@ export default function CaseDetailContent({
     return list;
   }, [
     caseItem.communications,
+    communicationsFilterTab,
     communicationsSearchQuery,
-    communicationsSelectedTypes,
     communicationsSelectedUsers,
   ]);
   const toggleCommUser = React.useCallback((user: string) => {
@@ -199,16 +200,7 @@ export default function CaseDetailContent({
       return next;
     });
   }, []);
-  const toggleCommType = React.useCallback((type: Communication["type"]) => {
-    setCommunicationsSelectedTypes((prev) => {
-      const next = new Set(prev);
-      if (next.has(type)) next.delete(type);
-      else next.add(type);
-      return next;
-    });
-  }, []);
   const clearCommUserFilter = React.useCallback(() => setCommunicationsSelectedUsers(new Set()), []);
-  const clearCommTypeFilter = React.useCallback(() => setCommunicationsSelectedTypes(new Set()), []);
 
   return (
     <div className="min-w-0 w-full p-density-xl">
@@ -512,16 +504,51 @@ export default function CaseDetailContent({
         </TabsContent>
 
         <TabsContent value="communications" className="mt-0 w-full">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    className="inline-flex items-center gap-2 rounded-md bg-[#006180] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0091BF] dark:bg-[#0091BF] dark:hover:bg-[#00C1FF]"
-                    style={{ fontSize: "var(--tally-font-size-sm)" }}
-                  >
-                    Actions
-                    <Icon name="expand_more" size={16} className="shrink-0" />
-                  </DropdownMenuTrigger>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+            {/* Left: filter button group — compact, matches right-side controls and project tabs */}
+            <nav
+              className="inline-flex h-8 w-fit rounded-md border border-border bg-gray-100 p-0.5 dark:border-gray-700 dark:bg-gray-800"
+              aria-label="Filter communications by type"
+              role="group"
+            >
+              {(
+                [
+                  { value: "all" as const, label: "All updates" },
+                  { value: "notes" as const, label: "Notes" },
+                  { value: "emails" as const, label: "Emails" },
+                  { value: "calls" as const, label: "Call logs" },
+                ] satisfies { value: CommFilterTab; label: string }[]
+              ).map(({ value, label }, index) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setCommunicationsFilterTab(value)}
+                  className={cn(
+                    "inline-flex h-full items-center justify-center px-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    index === 0 && "rounded-l-[5px]",
+                    index === 3 && "rounded-r-[5px]",
+                    index > 0 && "border-l border-border dark:border-gray-600",
+                    communicationsFilterTab === value
+                      ? "bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
+                      : "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+                  )}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  aria-pressed={communicationsFilterTab === value}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+            {/* Right: Actions, Search, User, Expand All */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className="inline-flex h-8 items-center gap-2 rounded-md bg-[#006180] px-3 py-0 text-sm font-medium text-white transition-colors hover:bg-[#0091BF] dark:bg-[#0091BF] dark:hover:bg-[#00C1FF]"
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                >
+                  Actions
+                  <Icon name="expand_more" size={16} className="shrink-0" />
+                </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[12rem]">
                   <DropdownMenuItem
                     onClick={() => onOpenNotePanel?.()}
@@ -578,141 +605,92 @@ export default function CaseDetailContent({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <div className="relative w-44 min-w-0 md:w-52">
+                <Icon
+                  name="search"
+                  size={16}
+                  className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <input
+                  type="search"
+                  placeholder="Search communications..."
+                  value={communicationsSearchQuery}
+                  onChange={(e) => setCommunicationsSearchQuery(e.target.value)}
+                  className={cn(
+                    "h-8 w-full rounded-md border border-border bg-white pl-8 pr-2.5 py-1.5 text-sm text-gray-900 placeholder:text-muted-foreground",
+                    "focus:outline-none focus:ring-2 focus:ring-[#2C365D] focus:ring-offset-1 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400"
+                  )}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  aria-label="Search communications"
+                />
               </div>
-
-              {/* Search and filters — right-aligned */}
-              <div className="ml-auto flex flex-wrap items-center gap-2 sm:gap-3">
-                <div className="relative w-44 min-w-0 md:w-52">
+              <Popover>
+                <PopoverTrigger
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2.5 py-1.5 text-sm text-gray-700 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700",
+                    communicationsSelectedUsers.size > 0 && "border-[#2C365D] bg-[#2C365D]/5 dark:border-[#7c8cb8] dark:bg-[#7c8cb8]/10"
+                  )}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                >
+                  <Icon name="person" size={14} className="shrink-0 text-muted-foreground" />
+                  <span>User</span>
+                  {communicationsSelectedUsers.size > 0 && (
+                    <span className="rounded bg-[#2C365D] px-1 py-0 text-[10px] text-white dark:bg-[#7c8cb8]">
+                      {communicationsSelectedUsers.size}
+                    </span>
+                  )}
+                  <Icon name="expand_more" size={14} className="shrink-0 text-muted-foreground" />
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-48 p-2">
+                  <div className="max-h-52 overflow-y-auto">
+                    {communicationsUniqueUsers.map((user) => (
+                      <label
+                        key={user}
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={communicationsSelectedUsers.has(user)}
+                          onChange={() => toggleCommUser(user)}
+                          className="h-3.5 w-3.5 rounded border-border text-[#2C365D] focus:ring-[#2C365D] dark:border-gray-600 dark:bg-gray-700"
+                        />
+                        <span className="text-sm text-gray-900 dark:text-gray-100">{user}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {communicationsSelectedUsers.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearCommUserFilter}
+                      className="mt-2 w-full rounded py-1.5 text-center text-sm font-medium text-[#2C365D] hover:bg-gray-100 dark:text-[#7c8cb8] dark:hover:bg-gray-800"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </PopoverContent>
+              </Popover>
+              {filteredCommunications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allIds = new Set(filteredCommunications.map((c) => c.id));
+                    const allExpanded = allIds.size > 0 && communicationsExpandedIds.size >= allIds.size;
+                    setCommunicationsExpandedIds(allExpanded ? new Set() : allIds);
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-transparent px-0 py-1 text-sm font-medium text-[#2C365D] transition-colors hover:underline dark:text-[#7c8cb8]"
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                >
                   <Icon
-                    name="search"
+                    name={communicationsExpandedIds.size >= filteredCommunications.length ? "unfold_less" : "unfold_more"}
                     size={16}
-                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    className="shrink-0"
                   />
-                  <input
-                    type="search"
-                    placeholder="Search communications..."
-                    value={communicationsSearchQuery}
-                    onChange={(e) => setCommunicationsSearchQuery(e.target.value)}
-                    className={cn(
-                      "h-8 w-full rounded-md border border-border bg-white pl-8 pr-2.5 py-1.5 text-sm text-gray-900 placeholder:text-muted-foreground",
-                      "focus:outline-none focus:ring-2 focus:ring-[#2C365D] focus:ring-offset-1 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-400"
-                    )}
-                    style={{ fontSize: "var(--tally-font-size-sm)" }}
-                    aria-label="Search communications"
-                  />
-                </div>
-                <Popover>
-                  <PopoverTrigger
-                    className={cn(
-                      "inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2.5 py-1.5 text-sm text-gray-700 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700",
-                      communicationsSelectedUsers.size > 0 && "border-[#2C365D] bg-[#2C365D]/5 dark:border-[#7c8cb8] dark:bg-[#7c8cb8]/10"
-                    )}
-                    style={{ fontSize: "var(--tally-font-size-sm)" }}
-                  >
-                    <Icon name="person" size={14} className="shrink-0 text-muted-foreground" />
-                    <span>User</span>
-                    {communicationsSelectedUsers.size > 0 && (
-                      <span className="rounded bg-[#2C365D] px-1 py-0 text-[10px] text-white dark:bg-[#7c8cb8]">
-                        {communicationsSelectedUsers.size}
-                      </span>
-                    )}
-                    <Icon name="expand_more" size={14} className="shrink-0 text-muted-foreground" />
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-48 p-2">
-                    <div className="max-h-52 overflow-y-auto">
-                      {communicationsUniqueUsers.map((user) => (
-                        <label
-                          key={user}
-                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={communicationsSelectedUsers.has(user)}
-                            onChange={() => toggleCommUser(user)}
-                            className="h-3.5 w-3.5 rounded border-border text-[#2C365D] focus:ring-[#2C365D] dark:border-gray-600 dark:bg-gray-700"
-                          />
-                          <span className="text-sm text-gray-900 dark:text-gray-100">{user}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {communicationsSelectedUsers.size > 0 && (
-                      <button
-                        type="button"
-                        onClick={clearCommUserFilter}
-                        className="mt-2 w-full rounded py-1.5 text-center text-sm font-medium text-[#2C365D] hover:bg-gray-100 dark:text-[#7c8cb8] dark:hover:bg-gray-800"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </PopoverContent>
-                </Popover>
-                <Popover>
-                  <PopoverTrigger
-                    className={cn(
-                      "inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2.5 py-1.5 text-sm text-gray-700 transition-colors dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700",
-                      communicationsSelectedTypes.size > 0 && "border-[#2C365D] bg-[#2C365D]/5 dark:border-[#7c8cb8] dark:bg-[#7c8cb8]/10"
-                    )}
-                    style={{ fontSize: "var(--tally-font-size-sm)" }}
-                  >
-                    <Icon name="filter_list" size={14} className="shrink-0 text-muted-foreground" />
-                    <span>Type</span>
-                    {communicationsSelectedTypes.size > 0 && (
-                      <span className="rounded bg-[#2C365D] px-1 py-0 text-[10px] text-white dark:bg-[#7c8cb8]">
-                        {communicationsSelectedTypes.size}
-                      </span>
-                    )}
-                    <Icon name="expand_more" size={14} className="shrink-0 text-muted-foreground" />
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-40 p-2">
-                    <div className="space-y-0.5">
-                      {COMM_TYPE_OPTIONS.map(({ value, label }) => (
-                        <label
-                          key={value}
-                          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={communicationsSelectedTypes.has(value)}
-                            onChange={() => toggleCommType(value)}
-                            className="h-3.5 w-3.5 rounded border-border text-[#2C365D] focus:ring-[#2C365D] dark:border-gray-600 dark:bg-gray-700"
-                          />
-                          <span className="text-sm text-gray-900 dark:text-gray-100">{label}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {communicationsSelectedTypes.size > 0 && (
-                      <button
-                        type="button"
-                        onClick={clearCommTypeFilter}
-                        className="mt-2 w-full rounded py-1.5 text-center text-sm font-medium text-[#2C365D] hover:bg-gray-100 dark:text-[#7c8cb8] dark:hover:bg-gray-800"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </PopoverContent>
-                </Popover>
-                {filteredCommunications.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const allIds = new Set(filteredCommunications.map((c) => c.id));
-                      const allExpanded = allIds.size > 0 && communicationsExpandedIds.size >= allIds.size;
-                      setCommunicationsExpandedIds(allExpanded ? new Set() : allIds);
-                    }}
-                    className="inline-flex items-center gap-1.5 bg-transparent px-0 py-1 text-sm font-medium text-[#2C365D] transition-colors hover:underline dark:text-[#7c8cb8]"
-                    style={{ fontSize: "var(--tally-font-size-sm)" }}
-                  >
-                    <Icon
-                      name={communicationsExpandedIds.size >= filteredCommunications.length ? "unfold_less" : "unfold_more"}
-                      size={16}
-                      className="shrink-0"
-                    />
-                    {communicationsExpandedIds.size >= filteredCommunications.length && filteredCommunications.length > 0
-                      ? "Collapse All"
-                      : "Expand All"}
-                  </button>
-                )}
-              </div>
+                  {communicationsExpandedIds.size >= filteredCommunications.length && filteredCommunications.length > 0
+                    ? "Collapse All"
+                    : "Expand All"}
+                </button>
+              )}
+            </div>
           </div>
           <CommunicationTimeline
             communications={filteredCommunications}
