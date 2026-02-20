@@ -24,9 +24,8 @@ import {
   Line,
   AreaChart,
   Area,
-  PieChart,
-  Pie,
-  Cell,
+  Treemap,
+  Rectangle,
 } from "recharts";
 
 const CHART_BLUE = dataVisualizationColors.dataFSolid.hex;
@@ -132,31 +131,126 @@ const accountsByStatus = [
 
 const totalAccountRecords = accountsByStatus.reduce((s, r) => s + r.count, 0);
 
-// Top 20 customers by case count (previous quarter) – for donut
+// Top 20 customers by case count (previous quarter)
 const topCustomersByCases = [
-  { name: "Customer A", count: 52 },
-  { name: "Customer B", count: 24 },
-  { name: "Customer C", count: 22 },
-  { name: "Customer D", count: 21 },
-  { name: "Customer E", count: 20 },
-  { name: "Customer F", count: 19 },
-  { name: "Customer G", count: 18 },
-  { name: "Customer H", count: 17 },
-  { name: "Customer I", count: 15 },
-  { name: "Customer J", count: 14 },
-  { name: "Customer K", count: 13 },
-  { name: "Customer L", count: 11 },
-  { name: "Customer M", count: 10 },
-  { name: "Customer N", count: 10 },
-  { name: "Customer O", count: 9 },
-  { name: "Customer P", count: 8 },
-  { name: "Customer Q", count: 7 },
-  { name: "Customer R", count: 6 },
-  { name: "Customer S", count: 5 },
-  { name: "Customer T", count: 4 },
+  { name: "Townsville Port Authority", count: 52 },
+  { name: "Aurora Power", count: 24 },
+  { name: "Bowen Basin Mining", count: 22 },
+  { name: "Gladstone Aluminium", count: 21 },
+  { name: "Green Solutions", count: 20 },
+  { name: "Energy Plus Co", count: 19 },
+  { name: "Northern Gas Co", count: 18 },
+  { name: "Coastal Logistics", count: 17 },
+  { name: "Metro Utilities", count: 15 },
+  { name: "New Wave Energy", count: 14 },
+  { name: "CityGrid", count: 13 },
+  { name: "Mackay Sugar", count: 11 },
+  { name: "Brisbane Convention Centre", count: 10 },
+  { name: "Sunrise Retail", count: 10 },
+  { name: "Pacific Data Hub", count: 9 },
+  { name: "Riverside Manufacturing", count: 8 },
+  { name: "Summit Hospitality", count: 7 },
+  { name: "Valley Health", count: 6 },
+  { name: "Horizon Solar", count: 5 },
+  { name: "Tableland Farms", count: 4 },
 ];
 
 const totalCasesTop20 = topCustomersByCases.reduce((s, r) => s + r.count, 0);
+
+// Treemap expects a root node with children; each child has name and value
+const topCustomersTreemapData = [
+  {
+    name: "Customers",
+    children: topCustomersByCases.map(({ name, count }) => ({ name, value: count })),
+  },
+];
+
+const MIN_CELL_WIDTH_FOR_TEXT = 44;
+const MIN_CELL_HEIGHT_FOR_TEXT = 32;
+
+/** Relative luminance (0–1). Use dark text when > 0.5, light text otherwise. */
+function getLuminance(hex: string): number {
+  const n = hex.replace("#", "");
+  const r = parseInt(n.slice(0, 2), 16) / 255;
+  const g = parseInt(n.slice(2, 4), 16) / 255;
+  const b = parseInt(n.slice(4, 6), 16) / 255;
+  const [sr, sg, sb] = [r, g, b].map((c) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  );
+  return 0.2126 * sr + 0.7152 * sg + 0.0722 * sb;
+}
+
+function TreemapCell(props: {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  index?: number;
+  depth?: number;
+  name?: string;
+  value?: number;
+}) {
+  const {
+    x = 0,
+    y = 0,
+    width = 0,
+    height = 0,
+    index = 0,
+    depth = 0,
+    name = "",
+    value,
+  } = props;
+  // Skip root node so only customer tiles are drawn
+  if (depth === 0) return null;
+
+  const showLabel =
+    width >= MIN_CELL_WIDTH_FOR_TEXT && height >= MIN_CELL_HEIGHT_FOR_TEXT;
+  const fill = CHART_COLORS[index % CHART_COLORS.length];
+  const useLightText = getLuminance(fill) <= 0.5;
+  const textFill = useLightText ? "#fff" : "rgba(24,27,37,0.9)";
+
+  return (
+    <g>
+      <Rectangle
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        fill={fill}
+        stroke="rgba(255,255,255,0.6)"
+        strokeWidth={1}
+        style={{ outline: "none" }}
+      />
+      {showLabel && (
+        <>
+          <text
+            x={x + width / 2}
+            y={y + height / 2 - 6}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill={textFill}
+            fontSize={10}
+            fontWeight={500}
+            style={{ pointerEvents: "none" }}
+          >
+            {name.length > 12 ? `${name.slice(0, 10)}…` : name}
+          </text>
+          <text
+            x={x + width / 2}
+            y={y + height / 2 + 8}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill={textFill}
+            fontSize={9}
+            style={{ pointerEvents: "none" }}
+          >
+            {value ?? 0} cases
+          </text>
+        </>
+      )}
+    </g>
+  );
+}
 
 // Key metrics (mock – replace with real case data when available)
 const AVG_TIME_TO_RESOLVED_DAYS = 4.2;
@@ -217,9 +311,14 @@ export default function CasesSummaryDashboardPage() {
         <div className="mb-density-lg grid grid-cols-1 gap-density-md sm:grid-cols-2 lg:grid-cols-4">
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
             <CardContent className="flex flex-col justify-center px-6 pt-6 pb-5">
-              <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
-                Cases this quarter by client
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
+                  Cases this quarter by client
+                </p>
+                <div className="flex shrink-0 items-center justify-center rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
+                  <Icon name="folder_open" size={28} className="text-muted-foreground dark:text-gray-400" />
+                </div>
+              </div>
               <p
                 className="mt-3 font-bold text-gray-900 dark:text-gray-100"
                 style={{ fontSize: "var(--tally-font-size-4xl)", lineHeight: "var(--tally-line-height-tight)" }}
@@ -243,9 +342,14 @@ export default function CasesSummaryDashboardPage() {
 
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
             <CardContent className="flex flex-col justify-center px-6 pt-6 pb-5">
-              <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
-                Average time to resolved
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
+                  Average time to resolved
+                </p>
+                <div className="flex shrink-0 items-center justify-center rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
+                  <Icon name="schedule" size={28} className="text-muted-foreground dark:text-gray-400" />
+                </div>
+              </div>
               <p
                 className="mt-3 font-bold text-gray-900 dark:text-gray-100"
                 style={{ fontSize: "var(--tally-font-size-4xl)", lineHeight: "var(--tally-line-height-tight)" }}
@@ -269,9 +373,14 @@ export default function CasesSummaryDashboardPage() {
 
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
             <CardContent className="flex flex-col justify-center px-6 pt-6 pb-5">
-              <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
-                Open cases
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
+                  Open cases
+                </p>
+                <div className="flex shrink-0 items-center justify-center rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
+                  <Icon name="pending_actions" size={28} className="text-muted-foreground dark:text-gray-400" />
+                </div>
+              </div>
               <p
                 className="mt-3 font-bold text-gray-900 dark:text-gray-100"
                 style={{ fontSize: "var(--tally-font-size-4xl)", lineHeight: "var(--tally-line-height-tight)" }}
@@ -295,9 +404,14 @@ export default function CasesSummaryDashboardPage() {
 
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
             <CardContent className="flex flex-col justify-center px-6 pt-6 pb-5">
-              <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
-                Total records (contact roles)
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
+                  Total records (contact roles)
+                </p>
+                <div className="flex shrink-0 items-center justify-center rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
+                  <Icon name="contacts" size={28} className="text-muted-foreground dark:text-gray-400" />
+                </div>
+              </div>
               <p
                 className="mt-3 font-bold text-gray-900 dark:text-gray-100"
                 style={{ fontSize: "var(--tally-font-size-4xl)", lineHeight: "var(--tally-line-height-tight)" }}
@@ -493,35 +607,30 @@ export default function CasesSummaryDashboardPage() {
               <CardDescription>Record count by client</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="relative flex items-center justify-center" style={{ height: "260px" }}>
+              <div className="mb-2 flex items-center gap-2">
+                <span className="text-lg font-semibold text-[#2C365D] dark:text-[#7c8cb8]">
+                  {totalCasesTop20.toLocaleString()}
+                </span>
+                <span className="text-sm text-muted-foreground">total cases</span>
+              </div>
+              <div style={{ height: "280px" }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={topCustomersByCases}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      dataKey="count"
-                      nameKey="name"
-                      paddingAngle={1}
-                    >
-                      {topCustomersByCases.map((_, index) => (
-                        <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
+                  <Treemap
+                    data={topCustomersTreemapData}
+                    dataKey="value"
+                    nameKey="name"
+                    aspectRatio={4 / 3}
+                    content={(props) => <TreemapCell {...props} />}
+                  >
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E5E7EB" }}
-                      formatter={(value: number | undefined, name: string | undefined) => [value ?? 0, name ?? ""]}
+                      formatter={(value: number | undefined, name: string | undefined) => [
+                        value ?? 0,
+                        name ?? "Cases",
+                      ]}
                     />
-                  </PieChart>
+                  </Treemap>
                 </ResponsiveContainer>
-                <div className="absolute left-1/2 top-1/2 flex flex-col items-center justify-center -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                  <span className="text-xs font-medium text-muted-foreground">Record Count</span>
-                  <span className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    {totalCasesTop20}
-                  </span>
-                </div>
               </div>
               <div className="mt-2 flex items-center justify-between border-t border-border pt-2 dark:border-gray-700">
                 <Link
