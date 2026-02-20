@@ -66,6 +66,30 @@ export interface Account {
   contractEndDate: string;
   /** Optional: other account IDs this account is linked to (e.g. shared sites, consolidated billing). */
   linkedAccountIds?: string[];
+  /** Optional: legal or business name (display in context panel). */
+  legalBusinessName?: string;
+  /** Optional: parent account ID for link (context panel). */
+  parentAccountId?: string;
+  /** Optional: parent account display name. */
+  parentAccountName?: string;
+  /** Optional: customer type label (e.g. QLD Retail Customer). */
+  customerType?: string;
+  /** Optional: account status label (e.g. Billing) — distinct from status (Active/Suspended/Closed). */
+  accountStatus?: string;
+  /** Optional: whether the account is closed. */
+  isClosed?: boolean;
+  /** Optional: account sync status (e.g. synced). */
+  accountSyncStatus?: boolean;
+  /** Optional: consolidate to parent. */
+  consolidateToParent?: boolean;
+  /** Optional: is direct debit. */
+  isDirectDebit?: boolean;
+  /** Optional: terms (e.g. CSEnergy14). */
+  terms?: string;
+  /** Optional: service reference number. */
+  serviceReferenceNumber?: string;
+  /** Optional: life support registered. */
+  lifeSupport?: boolean;
 }
 
 // ── Contact ─────────────────────────────────────────────────────────────────

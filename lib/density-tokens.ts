@@ -95,9 +95,9 @@ export const densityTokens: Record<DensityMode, DensityTokenSet> = {
  * checked from largest to smallest.
  */
 export const densityBreakpoints: Record<DensityMode, number> = {
-  comfortable: 2560, // 4K and above
-  normal: 1920,      // Standard → 4K
-  compact: 0,        // Below 1920 px (catch-all)
+  comfortable: 2560, // 2560px and above
+  normal: 1536,      // 1536px to 2559px
+  compact: 0,        // Below 1536px (default)
 } as const;
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -111,7 +111,7 @@ export const densityBreakpoints: Record<DensityMode, number> = {
  * ```ts
  * densityFromWidth(2600); // "comfortable"
  * densityFromWidth(1920); // "normal"
- * densityFromWidth(1440); // "compact"
+ * densityFromWidth(1400); // "compact"
  * ```
  */
 export function densityFromWidth(width: number): DensityMode {
