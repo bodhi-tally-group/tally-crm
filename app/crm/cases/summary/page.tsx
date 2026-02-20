@@ -203,7 +203,7 @@ export default function CasesSummaryDashboardPage() {
               lineHeight: "var(--tally-line-height-tight)",
             }}
           >
-            Summary Dashboard
+            Case Summary Dashboard
           </h1>
           <p
             className="mt-density-xs text-muted-foreground"
@@ -371,7 +371,7 @@ export default function CasesSummaryDashboardPage() {
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
             <CardHeader>
               <CardTitle>Trend of Cases Closed</CardTitle>
-              <CardDescription># of cases closed by date</CardDescription>
+              <CardDescription>Number of cases closed by date</CardDescription>
             </CardHeader>
             <CardContent>
               <div style={{ height: "260px" }}>
@@ -382,7 +382,7 @@ export default function CasesSummaryDashboardPage() {
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E5E7EB" }}
-                      formatter={(value: number | undefined) => [value ?? 0, "# of Cases Closed"]}
+                      formatter={(value: number | undefined) => [value ?? 0, "Number of Cases Closed"]}
                       labelFormatter={(label) => `Date/Time Closed: ${label}`}
                     />
                     <Line
@@ -489,7 +489,7 @@ export default function CasesSummaryDashboardPage() {
 
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
             <CardHeader>
-              <CardTitle>Top 20 Customers by # Cases (Previous Quarter)</CardTitle>
+              <CardTitle>Top 20 Customers by Number of Cases (Previous Quarter)</CardTitle>
               <CardDescription>Record count by client</CardDescription>
             </CardHeader>
             <CardContent>

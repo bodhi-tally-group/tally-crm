@@ -320,10 +320,10 @@ export default function CaseListPage() {
             </span>
             <Link
               href="/crm/cases/summary"
-              className="font-medium text-[#2C365D] hover:underline dark:text-[#7c8cb8] dark:hover:underline"
+              className="font-medium text-[#2C365D] underline hover:underline dark:text-[#7c8cb8] dark:hover:underline"
               style={{ fontSize: "var(--tally-font-size-sm)" }}
             >
-              Full Overview
+              Case Summary Dashboard
             </Link>
           </div>
         </div>

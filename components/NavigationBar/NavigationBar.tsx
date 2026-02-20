@@ -89,6 +89,11 @@ export default function NavigationBar({
   const envRef = useRef<HTMLDivElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
 
+  // Sync active nav with URL when defaultActiveId changes (e.g. navigation to home)
+  useEffect(() => {
+    if (defaultActiveId != null) setActiveId(defaultActiveId);
+  }, [defaultActiveId]);
+
   // Show a fixed-position tooltip to the right of the collapsed nav
   const showTooltip = (e: React.MouseEvent, label: string) => {
     if (!collapsed) return;
