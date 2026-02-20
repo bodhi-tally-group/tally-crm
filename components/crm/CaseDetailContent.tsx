@@ -513,18 +513,18 @@ export default function CaseDetailContent({
             >
               {(
                 [
-                  { value: "all" as const, label: "All updates" },
-                  { value: "notes" as const, label: "Notes" },
-                  { value: "emails" as const, label: "Emails" },
-                  { value: "calls" as const, label: "Call logs" },
-                ] satisfies { value: CommFilterTab; label: string }[]
-              ).map(({ value, label }, index) => (
+                  { value: "all" as const, label: "All updates", icon: "list" as const },
+                  { value: "notes" as const, label: "Notes", icon: "edit" as const },
+                  { value: "emails" as const, label: "Emails", icon: "mail" as const },
+                  { value: "calls" as const, label: "Call logs", icon: "call" as const },
+                ] satisfies { value: CommFilterTab; label: string; icon: string }[]
+              ).map(({ value, label, icon }, index) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setCommunicationsFilterTab(value)}
                   className={cn(
-                    "inline-flex h-full items-center justify-center px-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    "inline-flex h-full items-center justify-center gap-1.5 px-3 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     index === 0 && "rounded-l-[5px]",
                     index === 3 && "rounded-r-[5px]",
                     index > 0 && "border-l border-border dark:border-gray-600",
@@ -535,6 +535,7 @@ export default function CaseDetailContent({
                   style={{ fontSize: "var(--tally-font-size-sm)" }}
                   aria-pressed={communicationsFilterTab === value}
                 >
+                  <Icon name={icon} size={16} className="shrink-0" />
                   {label}
                 </button>
               ))}
