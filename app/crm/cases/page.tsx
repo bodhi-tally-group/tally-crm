@@ -16,18 +16,38 @@ import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/utils";
 import { mockCases } from "@/lib/mock-data/cases";
 import { getAccountById, mockAccounts } from "@/lib/mock-data/accounts";
+import {
+  CASE_TYPE_GROUPS,
+  CASE_GROUP_TO_TYPE,
+  CASE_TYPE_TO_GROUP,
+  CASE_GROUP_TO_REASON,
+} from "@/lib/mock-data/case-types";
 import SLAIndicator from "@/components/crm/SLAIndicator";
 import CaseListSidebar from "@/components/crm/CaseListSidebar";
 import AccountContextPanel from "@/components/crm/AccountContextPanel";
 import CaseDetailContent from "@/components/crm/CaseDetailContent";
-import LinkCaseModal from "@/components/crm/LinkCaseModal";
-import NewCaseModal from "@/components/crm/NewCaseModal";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/Tooltip/Tooltip";
-import { useCaseLinksOverrides } from "@/lib/case-links-overrides";
 import type { CaseItem, CasePriority, CaseStatus, CaseType } from "@/types/crm";
+const CASE_PRIORITIES: CasePriority[] = ["Critical", "High", "Medium", "Low"];
+const CASE_ORIGINS = ["Phone", "Email", "Web", "Chat", "Social Media"] as const;
+const CASE_REASONS = [
+  "Billing Dispute",
+  "Service Quality",
+  "Meter Issue",
+  "Rate Review",
+  "New Connection",
+  "Contract Amendment",
+  "Payment Issue",
+  "General Enquiry",
+  "Other",
+] as const;
+const OWNER_OPTIONS = ["Priya Sharma", "Daniel Cooper", "John Smith", "Unassigned"];
 
-const useDatabase = () =>
-  typeof window !== "undefined" && process.env.NEXT_PUBLIC_USE_DATABASE === "true";
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 type ViewMode = "kanban" | "list" | "tab";
 
 const CASE_STATUSES: CaseStatus[] = [
@@ -90,78 +110,24 @@ const statusOrder: Record<string, number> = {
   Closed: 4,
 };
 
-const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline" | "yellow"> = {
+const priorityVariant: Record<CasePriority, "error" | "warning" | "info" | "outline"> = {
   Critical: "error",
   High: "warning",
-  Medium: "yellow",
+  Medium: "info",
   Low: "outline",
 };
-
-/** Parse DD/MM/YYYY (en-AU) to timestamp for sorting; fallback to NaN if invalid */
-function parseCreatedDate(s: string): number {
-  const parts = s.trim().split("/");
-  if (parts.length !== 3) return NaN;
-  const day = parseInt(parts[0], 10);
-  const month = parseInt(parts[1], 10) - 1;
-  const year = parseInt(parts[2], 10);
-  if (Number.isNaN(day) || Number.isNaN(month) || Number.isNaN(year)) return NaN;
-  const d = new Date(year, month, day);
-  return Number.isNaN(d.getTime()) ? NaN : d.getTime();
-}
 
 export default function CaseListPage() {
   const [viewMode, setViewMode] = React.useState<ViewMode>("list");
   const [tabViewSelectedCaseId, setTabViewSelectedCaseId] = React.useState<string | null>(null);
-  const [listView, setListView] = React.useState<ListViewId>("my");
+  const [listView, setListView] = React.useState<ListViewId>("all");
   const kanbanRef = React.useRef<HTMLDivElement>(null);
-  const [cases, setCases] = React.useState<CaseItem[]>(mockCases);
-  const [casesLoading, setCasesLoading] = React.useState(false);
+  const [cases, setCases] = React.useState(mockCases);
   const [modalOpen, setModalOpen] = React.useState(false);
-  const useDb = useDatabase();
-
-  React.useEffect(() => {
-    if (!useDb) return;
-    setCasesLoading(true);
-    fetch("/api/cases")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setCases(Array.isArray(data) ? data : []))
-      .catch(() => setCases([]))
-      .finally(() => setCasesLoading(false));
-  }, [useDb]);
-
-  const refetchCases = React.useCallback(() => {
-    if (!useDb) return;
-    setCasesLoading(true);
-    fetch("/api/cases")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setCases(Array.isArray(data) ? data : []))
-      .catch(() => {})
-      .finally(() => setCasesLoading(false));
-  }, [useDb]);
-
-  const createCaseViaApi = React.useCallback(
-    (caseData: CaseItem) =>
-      fetch("/api/cases", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(caseData),
-      }).then((r) => {
-        if (!r.ok) throw new Error("Create failed");
-        return r.json() as Promise<CaseItem>;
-      }),
-    []
-  );
   const [accountFilter, setAccountFilter] = React.useState("");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortField, setSortField] = React.useState<SortField>("createdDate");
   const [sortDir, setSortDir] = React.useState<SortDirection>("desc");
-  const [linkModalOpen, setLinkModalOpen] = React.useState(false);
-  const [notePanelOpen, setNotePanelOpen] = React.useState(false);
-  type PendingReason = "Customer" | "3rd Party" | "On Hold";
-  const [pendingFiltersSelected, setPendingFiltersSelected] = React.useState<
-    Set<PendingReason>
-  >(new Set());
-  const { getRelatedCases, addLink } = useCaseLinksOverrides();
 
   // Convert vertical mouse-wheel into horizontal scroll for kanban board
   React.useEffect(() => {
@@ -180,30 +146,15 @@ export default function CaseListPage() {
   }, [viewMode]);
 
   const accountNames = React.useMemo(
-    () => Array.from(new Set(cases.map((c) => c.accountName))).sort(),
-    [cases]
+    () => Array.from(new Set(mockCases.map((c) => c.accountName))).sort(),
+    []
   );
 
-  const handleDrop = React.useCallback(
-    (caseId: string, newStatus: CaseStatus) => {
-      if (useDb) {
-        fetch(`/api/cases/${caseId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        })
-          .then((r) => (r.ok ? r.json() : null))
-          .then((updated) => {
-            if (updated) setCases((prev) => prev.map((c) => (c.id === caseId ? updated : c)));
-          });
-      } else {
-        setCases((prev) =>
-          prev.map((c) => (c.id === caseId ? { ...c, status: newStatus } : c))
-        );
-      }
-    },
-    [useDb]
-  );
+  const handleDrop = (caseId: string, newStatus: CaseStatus) => {
+    setCases((prev) =>
+      prev.map((c) => (c.id === caseId ? { ...c, status: newStatus } : c))
+    );
+  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -274,12 +225,7 @@ export default function CaseListPage() {
           return dir * ((slaOrder[a.slaStatus] ?? 99) - (slaOrder[b.slaStatus] ?? 99));
         case "owner":
           return dir * a.owner.localeCompare(b.owner);
-        case "createdDate": {
-          const ta = parseCreatedDate(a.createdDate);
-          const tb = parseCreatedDate(b.createdDate);
-          if (!Number.isNaN(ta) && !Number.isNaN(tb)) return dir * (ta - tb);
-          return dir * a.createdDate.localeCompare(b.createdDate);
-        }
+        case "createdDate":
         default:
           return dir * a.createdDate.localeCompare(b.createdDate);
       }
@@ -287,24 +233,6 @@ export default function CaseListPage() {
 
     return result;
   }, [cases, listView, accountFilter, searchQuery, sortField, sortDir]);
-
-  const pendingCounts = React.useMemo(() => {
-    const allPending = filtered.filter((c) => c.status === "Pending");
-    return {
-      Customer: allPending.filter((c) => c.pendingReason === "Customer").length,
-      "3rd Party": allPending.filter((c) => c.pendingReason === "3rd Party").length,
-      "On Hold": allPending.filter((c) => c.pendingReason === "On Hold").length,
-    };
-  }, [filtered]);
-
-  const togglePendingFilter = React.useCallback((reason: PendingReason) => {
-    setPendingFiltersSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(reason)) next.delete(reason);
-      else next.add(reason);
-      return next;
-    });
-  }, []);
 
   // In Tab view, keep selection in sync with filtered list (e.g. when filters change)
   React.useEffect(() => {
@@ -318,16 +246,10 @@ export default function CaseListPage() {
   const kanbanByStatus = React.useMemo(() => {
     const byStatus: Record<string, CaseItem[]> = {};
     for (const status of CASE_STATUSES) {
-      let casesForStatus = filtered.filter((c) => c.status === status);
-      if (status === "Pending" && pendingFiltersSelected.size > 0) {
-        casesForStatus = casesForStatus.filter(
-          (c) => c.pendingReason && pendingFiltersSelected.has(c.pendingReason)
-        );
-      }
-      byStatus[status] = casesForStatus;
+      byStatus[status] = filtered.filter((c) => c.status === status);
     }
     return byStatus;
-  }, [filtered, pendingFiltersSelected]);
+  }, [filtered]);
 
   const renderSortHeader = (field: SortField, label: string, className?: string) => (
     <TableHead key={field} className={className}>
@@ -360,21 +282,50 @@ export default function CaseListPage() {
         viewMode === "tab" && "flex min-h-0 flex-1 flex-col"
       )}
     >
-      {/* Page header */}
-      <div className={cn("mb-density-xl flex items-center justify-between", viewMode === "tab" && "shrink-0")}>
+      {/* Page header — same pattern as Sales Pipeline: title + summary line underneath */}
+      <div className={cn("mb-density-lg flex items-center justify-between", viewMode === "tab" && "shrink-0")}>
         <div>
           <h1
             className="font-bold text-gray-900 dark:text-gray-100"
             style={{ fontSize: "var(--tally-font-size-3xl)", lineHeight: "var(--tally-line-height-tight)" }}
           >
-            Case Queue
+            Cases
           </h1>
-          <p
-            className="mt-density-xs text-muted-foreground"
-            style={{ fontSize: "var(--tally-font-size-sm)" }}
-          >
-            Manage and track support cases
-          </p>
+          <div className="mt-density-xs flex flex-wrap items-center gap-density-lg text-muted-foreground" style={{ fontSize: "var(--tally-font-size-sm)" }}>
+            <span>
+              Total:{" "}
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                {filtered.length === cases.length ? cases.length : `${filtered.length} of ${cases.length}`}
+              </span>{" "}
+              cases
+            </span>
+            <span>
+              Open:{" "}
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                {filtered.filter((c) => c.status !== "Closed" && c.status !== "Resolved").length}
+              </span>{" "}
+              cases
+            </span>
+            <span>
+              Breached:{" "}
+              <span className="font-semibold text-[#C40000]">
+                {filtered.filter((c) => c.slaStatus === "Breached").length}
+              </span>
+            </span>
+            <span>
+              At risk:{" "}
+              <span className="font-semibold text-[#C53B00]">
+                {filtered.filter((c) => c.slaStatus === "At Risk").length}
+              </span>
+            </span>
+            <Link
+              href="/crm/cases/summary"
+              className="font-medium text-[#2C365D] hover:underline dark:text-[#7c8cb8] dark:hover:underline"
+              style={{ fontSize: "var(--tally-font-size-sm)" }}
+            >
+              Full Overview
+            </Link>
+          </div>
         </div>
         <Button size="md" className="gap-1.5" onClick={() => setModalOpen(true)}>
           <Icon name="add" size="var(--tally-icon-size-sm)" className="mr-1" />
@@ -516,67 +467,12 @@ export default function CaseListPage() {
                     </div>
                   );
                 }
-                const relatedCaseNumbers = getRelatedCases(caseItem.id);
-                const handleTabUpdate = (payload: Partial<CaseItem>) => {
-                  if (useDb) {
-                    return fetch(`/api/cases/${caseItem.id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(payload),
-                    }).then((r) => {
-                      if (!r.ok) return;
-                      return r.json().then((updated: CaseItem) =>
-                        setCases((prev) => prev.map((c) => (c.id === caseItem.id ? updated : c)))
-                      );
-                    });
-                  }
-                  setCases((prev) =>
-                    prev.map((c) => (c.id === caseItem.id ? { ...c, ...payload } : c))
-                  );
-                  return Promise.resolve();
-                };
-                const handleTabDelete = () => {
-                  if (!confirm("Delete this case? This cannot be undone.")) return;
-                  fetch(`/api/cases/${caseItem.id}`, { method: "DELETE" }).then((r) => {
-                    if (r.ok) {
-                      setCases((prev) => prev.filter((c) => c.id !== caseItem.id));
-                      const remaining = filtered.filter((c) => c.id !== caseItem.id);
-                      setTabViewSelectedCaseId(remaining[0]?.id ?? null);
-                    }
-                  });
-                };
                 return (
                   <>
-                    <AccountContextPanel
-                      account={account}
-                      linkedCaseNumbers={relatedCaseNumbers}
-                      currentCaseId={caseItem.id}
-                      onOpenLinkModal={() => setLinkModalOpen(true)}
-                      onOpenNote={() => setNotePanelOpen(true)}
-                    />
+                    <AccountContextPanel account={account} />
                     <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto">
-                      <CaseDetailContent
-                        caseItem={caseItem}
-                        account={account}
-                        showBreadcrumbs={false}
-                        showOpenInFullPage
-                        relatedCaseNumbers={relatedCaseNumbers}
-                        onOpenLinkModal={() => setLinkModalOpen(true)}
-                        onUpdateCase={handleTabUpdate}
-                        onDeleteCase={useDb ? handleTabDelete : undefined}
-                        notePanelOpen={notePanelOpen}
-                        onOpenNotePanel={() => setNotePanelOpen(true)}
-                        onCloseNotePanel={() => setNotePanelOpen(false)}
-                      />
+                      <CaseDetailContent caseItem={caseItem} account={account} showBreadcrumbs={false} />
                     </div>
-                    <LinkCaseModal
-                      open={linkModalOpen}
-                      onOpenChange={setLinkModalOpen}
-                      currentCaseId={caseItem.id}
-                      account={account}
-                      existingRelatedCaseNumbers={relatedCaseNumbers}
-                      onSelectCase={(caseNumber) => addLink(caseItem.id, caseNumber)}
-                    />
                   </>
                 );
               })() : (
@@ -607,13 +503,6 @@ export default function CaseListPage() {
                   status={status}
                   cases={statusCases}
                   onDrop={handleDrop}
-                  pendingFiltersSelected={
-                    status === "Pending" ? pendingFiltersSelected : undefined
-                  }
-                  onPendingFilterToggle={
-                    status === "Pending" ? togglePendingFilter : undefined
-                  }
-                  pendingCounts={status === "Pending" ? pendingCounts : undefined}
                 />
               );
             })}
@@ -680,7 +569,7 @@ export default function CaseListPage() {
                 {filtered.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="py-12 text-center text-muted-foreground">
-                      {casesLoading ? "Loading cases…" : "No cases match your filters."}
+                      No cases match your filters.
                     </TableCell>
                   </TableRow>
                 )}
@@ -713,11 +602,8 @@ export default function CaseListPage() {
           onClose={() => setModalOpen(false)}
           onCreate={(newCase) => {
             setCases((prev) => [newCase, ...prev]);
-            setModalOpen(false);
           }}
           caseCount={cases.length}
-          createViaApi={useDb ? createCaseViaApi : undefined}
-          cases={cases}
         />
       )}
     </div>
@@ -727,29 +613,14 @@ export default function CaseListPage() {
 
 /* ─── Kanban Column ────────────────────────────────────────────────────── */
 
-const PENDING_FILTER_CONFIG: {
-  reason: "Customer" | "3rd Party" | "On Hold";
-  icon: string;
-}[] = [
-  { reason: "Customer", icon: "person" },
-  { reason: "3rd Party", icon: "group" },
-  { reason: "On Hold", icon: "pause" },
-];
-
 function CaseKanbanColumn({
   status,
   cases: columnCases,
   onDrop,
-  pendingFiltersSelected,
-  onPendingFilterToggle,
-  pendingCounts,
 }: {
   status: CaseStatus;
   cases: CaseItem[];
   onDrop: (caseId: string, newStatus: CaseStatus) => void;
-  pendingFiltersSelected?: Set<"Customer" | "3rd Party" | "On Hold">;
-  onPendingFilterToggle?: (reason: "Customer" | "3rd Party" | "On Hold") => void;
-  pendingCounts?: { Customer: number; "3rd Party": number; "On Hold": number };
 }) {
   const [isDragOver, setIsDragOver] = React.useState(false);
 
@@ -777,9 +648,9 @@ function CaseKanbanColumn({
       onDrop={handleDrop}
     >
       {/* Column header */}
-      <div className="flex items-center justify-between gap-2 rounded-t-lg border-b border-border bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", statusColors[status])} />
+      <div className="flex items-center justify-between rounded-t-lg border-b border-border bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
+        <div className="flex items-center gap-2">
+          <span className={cn("h-2.5 w-2.5 rounded-full", statusColors[status])} />
           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
             {status}
           </span>
@@ -787,45 +658,6 @@ function CaseKanbanColumn({
             {columnCases.length}
           </span>
         </div>
-        {status === "Pending" && onPendingFilterToggle && pendingCounts && (
-          <div className="flex shrink-0 items-center gap-1">
-            {PENDING_FILTER_CONFIG.map(({ reason, icon }) => {
-              const selected = pendingFiltersSelected?.has(reason) ?? false;
-              const count = pendingCounts[reason];
-              return (
-                <div key={reason} className="relative">
-                  <Tooltip delayDuration={200}>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => onPendingFilterToggle(reason)}
-                        className={cn(
-                          "flex items-center gap-0.5 rounded p-1 transition-colors",
-                          selected
-                            ? "text-[#C53B00] hover:text-[#C53B00]/90 dark:text-[#C53B00] dark:hover:text-[#e85c1a]"
-                            : "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400"
-                        )}
-                      >
-                        <Icon name={icon} size={16} />
-                        <span className="text-[10px] font-medium tabular-nums">{count}</span>
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="bottom"
-                      className="!border-0 !bg-white !px-4 !py-2.5 !text-sm !font-normal !text-gray-900 !shadow-md dark:!bg-gray-800 dark:!text-gray-100"
-                      style={{
-                        boxShadow:
-                          "0 2px 2px -1px rgba(10,13,18,0.04), 0 4px 6px -2px rgba(10,13,18,0.03), 0 12px 16px -4px rgba(10,13,18,0.08)",
-                      }}
-                    >
-                      <span className="whitespace-nowrap">{reason}</span>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
 
       {/* Cards */}
@@ -923,3 +755,790 @@ function StatusBadge({ status }: { status: CaseItem["status"] }) {
   );
 }
 
+/* ─── New Case Modal ──────────────────────────────────────────────────── */
+
+function NewCaseModal({
+  onClose,
+  onCreate,
+  caseCount,
+}: {
+  onClose: () => void;
+  onCreate: (newCase: CaseItem) => void;
+  caseCount: number;
+}) {
+  // ── Form state ──────────────────────────────────────────────────────
+  const [contactName, setContactName] = React.useState("");
+  const [contactId, setContactId] = React.useState("");
+  const [accountId, setAccountId] = React.useState("");
+  const [siteId, setSiteId] = React.useState("");
+  const [webEmail, setWebEmail] = React.useState("");
+  const [status, setStatus] = React.useState<CaseStatus>("New");
+  const [caseOrigin, setCaseOrigin] = React.useState("");
+  const [caseGroup, setCaseGroup] = React.useState("");
+  const [caseType, setCaseType] = React.useState("");
+  const [priority, setPriority] = React.useState<CasePriority>("Medium");
+  const [caseReason, setCaseReason] = React.useState("");
+  const [subject, setSubject] = React.useState("");
+  const [description, setDescription] = React.useState("");
+  const [owner, setOwner] = React.useState(OWNER_OPTIONS[0] ?? "");
+  const [caseDocumentationFiles, setCaseDocumentationFiles] = React.useState<File[]>([]);
+  const caseDocInputRef = React.useRef<HTMLInputElement>(null);
+
+  // ── Account search ──────────────────────────────────────────────────
+  const [accountSearch, setAccountSearch] = React.useState("");
+  const [accountDropdownOpen, setAccountDropdownOpen] = React.useState(false);
+  const accountInputRef = React.useRef<HTMLInputElement>(null);
+
+  const filteredAccounts = React.useMemo(() => {
+    if (!accountSearch) return mockAccounts;
+    const q = accountSearch.toLowerCase();
+    return mockAccounts.filter(
+      (a) =>
+        a.name.toLowerCase().includes(q) ||
+        a.accountNumber.toLowerCase().includes(q)
+    );
+  }, [accountSearch]);
+
+  const selectedAccount = mockAccounts.find((a) => a.id === accountId);
+
+  // ── Sites (by account) ──────────────────────────────────────────────
+  const availableSites = React.useMemo(
+    () => selectedAccount?.sites ?? [],
+    [selectedAccount]
+  );
+  const [siteDropdownOpen, setSiteDropdownOpen] = React.useState(false);
+  const siteDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // ── Contact (by account; only after account + site) ─────────────────
+  const availableContacts = React.useMemo(() => {
+    if (!accountId || !siteId) return [];
+    const acc = mockAccounts.find((a) => a.id === accountId);
+    return acc?.contacts ?? [];
+  }, [accountId, siteId]);
+
+  const [contactDropdownOpen, setContactDropdownOpen] = React.useState(false);
+  const contactDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // ── Email (by account contacts; same list as Contact) ───────────────
+  const [emailDropdownOpen, setEmailDropdownOpen] = React.useState(false);
+  const emailDropdownRef = React.useRef<HTMLDivElement>(null);
+
+  // ── Close dropdowns on outside click ────────────────────────────────
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        accountInputRef.current &&
+        !accountInputRef.current.parentElement?.contains(e.target as Node)
+      ) {
+        setAccountDropdownOpen(false);
+      }
+      if (
+        siteDropdownRef.current &&
+        !siteDropdownRef.current.contains(e.target as Node)
+      ) {
+        setSiteDropdownOpen(false);
+      }
+      if (
+        contactDropdownRef.current &&
+        !contactDropdownRef.current.contains(e.target as Node)
+      ) {
+        setContactDropdownOpen(false);
+      }
+      if (
+        emailDropdownRef.current &&
+        !emailDropdownRef.current.contains(e.target as Node)
+      ) {
+        setEmailDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // ── Submit ──────────────────────────────────────────────────────────
+  const saveAndNewRef = React.useRef(false);
+
+  const resetForm = () => {
+    setContactName("");
+    setContactId("");
+    setAccountId("");
+    setSiteId("");
+    setAccountSearch("");
+    setWebEmail("");
+    setStatus("New");
+    setCaseOrigin("");
+    setCaseGroup("");
+    setCaseType("");
+    setPriority("Medium");
+    setCaseReason("");
+    setSubject("");
+    setDescription("");
+    setOwner(OWNER_OPTIONS[0] ?? "");
+    setCaseDocumentationFiles([]);
+  };
+
+  const buildCase = (): CaseItem => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("en-AU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    return {
+      id: `case-${String(caseCount + 1).padStart(3, "0")}`,
+      caseNumber: `CS-2026-${String(caseCount + 1847).padStart(6, "0")}`,
+      accountId: accountId || "acc-001",
+      accountName: selectedAccount?.name ?? "Unknown Account",
+      type: (CASE_GROUP_TO_TYPE[caseGroup] ?? CASE_GROUP_TO_TYPE[CASE_TYPE_TO_GROUP[caseType]] ?? "Enquiry") as CaseType,
+      subType: caseType || caseReason || "General Enquiry",
+      status,
+      priority,
+      slaStatus: "On Track",
+      slaDeadline: "",
+      slaTimeRemaining: "4d 0h",
+      owner,
+      team: "Large Market Support",
+      createdDate: dateStr,
+      updatedDate: dateStr,
+      description,
+      resolution: "",
+      communications: [],
+      activities: [],
+      attachments: caseDocumentationFiles.map((file, i) => ({
+        id: `att-${Date.now()}-${i}`,
+        name: file.name,
+        type: file.type || "application/octet-stream",
+        size: formatFileSize(file.size),
+        uploadedBy: owner,
+        uploadedDate: new Date().toLocaleDateString("en-AU", { day: "2-digit", month: "2-digit", year: "numeric" }),
+      })),
+      relatedCases: [],
+    };
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onCreate(buildCase());
+    if (saveAndNewRef.current) {
+      resetForm();
+      saveAndNewRef.current = false;
+    } else {
+      onClose();
+    }
+  };
+
+  // ── Styling helpers ─────────────────────────────────────────────────
+  const formInput =
+    "h-10 w-full rounded-density-md border border-border bg-white px-3 outline-none placeholder:text-muted-foreground focus:border-[#2C365D] focus:ring-1 focus:ring-[#2C365D] dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100";
+  const formLabel = "text-sm font-medium text-gray-900 dark:text-gray-100";
+  const sectionHeading =
+    "col-span-2 pt-1 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:text-gray-400";
+  const sectionHeadingWithDivider =
+    "col-span-2 pt-4 pb-1.5 mt-1 border-b border-border mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground dark:border-gray-700 dark:text-gray-400";
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="new-case-modal-title"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="max-h-[90vh] w-full max-w-[720px] overflow-y-auto rounded-xl border border-border bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 dark:border-gray-700">
+          <h2
+            id="new-case-modal-title"
+            className="text-lg font-bold text-gray-900 dark:text-gray-100"
+          >
+            New Case
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label="Close"
+          >
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+
+        {/* ── Form ───────────────────────────────────────────────── */}
+        <form onSubmit={handleSubmit}>
+          <div className="px-6 py-4 space-y-4">
+            {/* ── Case Owner (above Case Information) ────────────── */}
+            <div className="space-y-1">
+              <label className={formLabel}>Case Owner</label>
+              <div className="relative max-w-xs">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={owner}
+                  onChange={(e) => setOwner(e.target.value)}
+                >
+                  {OWNER_OPTIONS.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* ── Case Information ──────────────────────────────── */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4 pt-0">
+              <div className={sectionHeadingWithDivider}>Case Information</div>
+
+              {/* Account Name (left column, row 1) */}
+              <div className="relative space-y-1.5">
+                <label className={formLabel}>
+                  Account Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    ref={accountInputRef}
+                    type="text"
+                    className={formInput}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    value={
+                      selectedAccount ? selectedAccount.name : accountSearch
+                    }
+                    onChange={(e) => {
+                      setAccountId("");
+                      setAccountSearch(e.target.value);
+                      setAccountDropdownOpen(true);
+                    }}
+                    onFocus={() => {
+                      if (selectedAccount) {
+                        setAccountSearch(selectedAccount.name);
+                        setAccountId("");
+                      }
+                      setAccountDropdownOpen(true);
+                    }}
+                    placeholder="Search Accounts..."
+                    required
+                  />
+                  <Icon
+                    name="search"
+                    size={16}
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
+                </div>
+                {accountDropdownOpen && (
+                  <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    {filteredAccounts.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        No accounts found
+                      </div>
+                    ) : (
+                      filteredAccounts.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setAccountId(a.id);
+                            setAccountSearch("");
+                            setSiteId("");
+                            setContactId("");
+                            setContactName("");
+                            setWebEmail("");
+                            setAccountDropdownOpen(false);
+                          }}
+                        >
+                          <Icon
+                            name="domain"
+                            size={14}
+                            className="text-muted-foreground"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {a.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {a.accountNumber}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Site (right column, row 1) */}
+              <div className="relative space-y-1.5" ref={siteDropdownRef}>
+                <label className={formLabel}>Site</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={cn(
+                      formInput,
+                      "flex items-center justify-between text-left cursor-pointer"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    onClick={() => setSiteDropdownOpen((o) => !o)}
+                  >
+                    <span className={!siteId ? "text-muted-foreground" : ""}>
+                      {siteId
+                        ? availableSites.find((s) => s.id === siteId)?.name ??
+                          siteId
+                        : "Select site"}
+                    </span>
+                    <Icon
+                      name="expand_more"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                  </button>
+                </div>
+                {siteDropdownOpen && (
+                  <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    {availableSites.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        {accountId ? "No sites for this account" : "Select an account first"}
+                      </div>
+                    ) : (
+                      availableSites.map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setSiteId(s.id);
+                            setContactId("");
+                            setContactName("");
+                            setWebEmail("");
+                            setSiteDropdownOpen(false);
+                          }}
+                        >
+                          <Icon name="place" size={14} className="text-muted-foreground" />
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {s.name}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Contact Name (left column, row 2) */}
+              <div className="relative space-y-1.5" ref={contactDropdownRef}>
+                <label className={formLabel}>Contact Name</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={cn(
+                      formInput,
+                      "flex items-center justify-between text-left cursor-pointer"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    onClick={() => setContactDropdownOpen((o) => !o)}
+                  >
+                    <span className={!contactName ? "text-muted-foreground" : ""}>
+                      {contactName || "Select contact"}
+                    </span>
+                    <Icon
+                      name="expand_more"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                  </button>
+                </div>
+                {contactDropdownOpen && (
+                  <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    {availableContacts.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        {accountId && siteId ? "No contacts for this account" : "Select an account and site first"}
+                      </div>
+                    ) : (
+                      availableContacts.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setContactId(c.id);
+                            setContactName(c.name);
+                            setWebEmail(c.email);
+                            setContactDropdownOpen(false);
+                          }}
+                        >
+                          <Icon name="person" size={14} className="text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {c.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {c.email}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Email (right column, row 2) */}
+              <div className="relative space-y-1.5" ref={emailDropdownRef}>
+                <label className={formLabel}>Email</label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    className={cn(
+                      formInput,
+                      "flex items-center justify-between text-left cursor-pointer"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                    onClick={() => setEmailDropdownOpen((o) => !o)}
+                  >
+                    <span className={!webEmail ? "text-muted-foreground" : ""}>
+                      {webEmail || "Select email"}
+                    </span>
+                    <Icon
+                      name="expand_more"
+                      size={16}
+                      className="text-muted-foreground shrink-0"
+                    />
+                  </button>
+                </div>
+                {emailDropdownOpen && (
+                  <div className="absolute left-0 top-full z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-md border border-border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                    {availableContacts.length === 0 ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        {accountId && siteId ? "No contacts for this account" : "Select an account and site first"}
+                      </div>
+                    ) : (
+                      availableContacts.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
+                          onClick={() => {
+                            setContactId(c.id);
+                            setContactName(c.name);
+                            setWebEmail(c.email);
+                            setEmailDropdownOpen(false);
+                          }}
+                        >
+                          <Icon name="mail" size={14} className="text-muted-foreground" />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {c.name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {c.email}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+            {/* ── Additional Information ────────────────────────── */}
+            <div className={sectionHeadingWithDivider}>Additional Information</div>
+
+            {/* Status */}
+            <div className="space-y-1">
+              <label className={formLabel}>
+                Status <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9", "disabled:cursor-not-allowed disabled:opacity-60")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as CaseStatus)}
+                  disabled
+                >
+                  {CASE_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Case Documentation (upload from device) */}
+            <div className="space-y-1 col-span-2">
+              <label className={formLabel}>Case Documentation</label>
+              <input
+                ref={caseDocInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.png,.jpg,.jpeg"
+                onChange={(e) => {
+                  const chosen = e.target.files;
+                  if (chosen?.length) {
+                    setCaseDocumentationFiles((prev) => [...prev, ...Array.from(chosen)]);
+                    e.target.value = "";
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => caseDocInputRef.current?.click()}
+                className={cn(
+                  formInput,
+                  "flex cursor-pointer items-center gap-2 border-dashed text-left text-muted-foreground hover:border-[#2C365D] hover:bg-gray-50/50 hover:text-gray-700 dark:hover:bg-gray-800/50 dark:hover:text-gray-300"
+                )}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+              >
+                <Icon name="upload" size={20} className="shrink-0" />
+                <span>Choose files from device</span>
+              </button>
+              {caseDocumentationFiles.length > 0 && (
+                <ul className="mt-2 space-y-1.5 rounded-md border border-border bg-gray-50/50 py-2 px-3 dark:border-gray-700 dark:bg-gray-800/30">
+                  {caseDocumentationFiles.map((file, index) => (
+                    <li
+                      key={`${file.name}-${index}`}
+                      className="flex items-center justify-between gap-2 text-sm"
+                    >
+                      <span className="truncate text-gray-700 dark:text-gray-300" title={file.name}>
+                        {file.name}
+                      </span>
+                      <span className="shrink-0 text-muted-foreground">
+                        {formatFileSize(file.size)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCaseDocumentationFiles((prev) => prev.filter((_, i) => i !== index))
+                        }
+                        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <Icon name="close" size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Case Origin */}
+            <div className="space-y-1">
+              <label className={formLabel}>
+                Case Origin <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={caseOrigin}
+                  onChange={(e) => setCaseOrigin(e.target.value)}
+                  required
+                >
+                  <option value="">--None--</option>
+                  {CASE_ORIGINS.map((o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Case Group */}
+            <div className="space-y-1">
+              <label className={formLabel}>Case Group</label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={caseGroup}
+                  onChange={(e) => {
+                    const nextGroup = e.target.value;
+                    setCaseGroup(nextGroup);
+                    const typesInGroup = CASE_TYPE_GROUPS[nextGroup] ?? [];
+                    if (caseType && !typesInGroup.includes(caseType)) {
+                      setCaseType("");
+                    }
+                  }}
+                >
+                  <option value="">--Select case group--</option>
+                  {Object.keys(CASE_TYPE_GROUPS).map((groupName) => (
+                    <option key={groupName} value={groupName}>
+                      {groupName}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Case Type (options depend on selected Case Group) */}
+            <div className="space-y-1">
+              <label className={formLabel}>Case Type</label>
+              <div className="relative">
+                <select
+                  className={cn(
+                    formInput,
+                    "cursor-pointer appearance-none pr-9",
+                    !caseGroup && "cursor-not-allowed opacity-60"
+                  )}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={caseType}
+                  disabled={!caseGroup}
+                  onChange={(e) => {
+                    const typeName = e.target.value;
+                    setCaseType(typeName);
+                    if (caseGroup && CASE_GROUP_TO_REASON[caseGroup]) {
+                      setCaseReason(CASE_GROUP_TO_REASON[caseGroup]);
+                    }
+                  }}
+                >
+                  <option value="">
+                    {caseGroup ? "--Select case type--" : "Select case group first"}
+                  </option>
+                  {(CASE_TYPE_GROUPS[caseGroup] ?? []).map((typeName) => (
+                    <option key={typeName} value={typeName}>
+                      {typeName}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Priority */}
+            <div className="space-y-1">
+              <label className={formLabel}>Priority</label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as CasePriority)}
+                >
+                  {CASE_PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Case Reason */}
+            <div className="space-y-1">
+              <label className={formLabel}>Case Reason</label>
+              <div className="relative">
+                <select
+                  className={cn(formInput, "cursor-pointer appearance-none pr-9")}
+                  style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  value={caseReason}
+                  onChange={(e) => setCaseReason(e.target.value)}
+                >
+                  <option value="">--None--</option>
+                  {CASE_REASONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+                <Icon
+                  name="expand_more"
+                  size={16}
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+              </div>
+            </div>
+
+            {/* ── Description Information ───────────────────────── */}
+            <div className={sectionHeadingWithDivider}>Description Information</div>
+
+            {/* Subject */}
+            <div className="col-span-2 space-y-1.5">
+              <label className={formLabel}>Subject</label>
+              <input
+                type="text"
+                className={formInput}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Brief summary of the case"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="col-span-2 space-y-1.5">
+              <label className={formLabel}>Description</label>
+              <textarea
+                className={cn(formInput, "h-24 resize-none py-2")}
+                style={{ fontSize: "var(--tally-font-size-sm)" }}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Detailed description of the case..."
+              />
+            </div>
+          </div>
+          </div>
+
+          {/* ── Footer ─────────────────────────────────────────────── */}
+          <div className="flex justify-end gap-3 border-t border-border px-6 py-3 dark:border-gray-700">
+            <Button variant="outline" size="md" type="button" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              size="md"
+              type="submit"
+              onClick={() => {
+                saveAndNewRef.current = true;
+              }}
+            >
+              Save &amp; New
+            </Button>
+            <Button
+              size="md"
+              type="submit"
+              onClick={() => {
+                saveAndNewRef.current = false;
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
