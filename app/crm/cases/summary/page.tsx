@@ -307,128 +307,180 @@ export default function CasesSummaryDashboardPage() {
           </p>
         </div>
 
-        {/* Key metrics – 4 across, highlighted numbers */}
+        {/* Key metrics – 4 across (Tally Energy Design System) */}
         <div className="mb-density-lg grid grid-cols-1 gap-density-md sm:grid-cols-2 lg:grid-cols-4">
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
-            <CardContent className="flex flex-col justify-center px-6 pt-6 pb-5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
-                  Cases this quarter by client
-                </p>
-                <div className="flex shrink-0 items-center justify-center rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
-                  <Icon name="folder_open" size={28} className="text-muted-foreground dark:text-gray-400" />
+            <CardContent className="p-density-xl pt-density-xl">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="font-medium text-muted-foreground dark:text-gray-400"
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  >
+                    Cases this quarter by client
+                  </p>
+                  <p
+                    className="mt-density-sm font-bold text-gray-900 dark:text-gray-100"
+                    style={{
+                      fontSize: "var(--tally-font-size-3xl)",
+                      lineHeight: "var(--tally-line-height-tight)",
+                    }}
+                  >
+                    {totalCasesTop20.toLocaleString()}
+                  </p>
+                  <div
+                    className={cn(
+                      "mt-density-sm flex items-center gap-density-xs font-medium",
+                      METRIC_TRENDS[0].positive ? "text-[#008000] dark:text-green-400" : "text-[#C40000] dark:text-red-400"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-xs)" }}
+                  >
+                    <Icon
+                      name={METRIC_TRENDS[0].direction === "up" ? "trending_up" : "trending_down"}
+                      size="var(--tally-icon-size-sm)"
+                    />
+                    <span>{METRIC_TRENDS[0].text}</span>
+                  </div>
                 </div>
-              </div>
-              <p
-                className="mt-3 font-bold text-gray-900 dark:text-gray-100"
-                style={{ fontSize: "var(--tally-font-size-4xl)", lineHeight: "var(--tally-line-height-tight)" }}
-              >
-                {totalCasesTop20.toLocaleString()}
-              </p>
-              <div
-                className={cn(
-                  "mt-3 flex items-center gap-1.5 text-xs font-medium",
-                  METRIC_TRENDS[0].positive ? "text-[#008000] dark:text-green-400" : "text-[#C40000] dark:text-red-400"
-                )}
-              >
-                <Icon
-                  name={METRIC_TRENDS[0].direction === "up" ? "trending_up" : "trending_down"}
-                  size={16}
-                />
-                <span>{METRIC_TRENDS[0].text}</span>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20">
+                  <Icon
+                    name="folder"
+                    size="var(--tally-icon-size-lg)"
+                    className="text-[#2C365D] dark:text-[#7c8cb8]"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
-            <CardContent className="flex flex-col justify-center px-6 pt-6 pb-5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
-                  Average time to resolved
-                </p>
-                <div className="flex shrink-0 items-center justify-center rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
-                  <Icon name="schedule" size={28} className="text-muted-foreground dark:text-gray-400" />
+            <CardContent className="p-density-xl pt-density-xl">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="font-medium text-muted-foreground dark:text-gray-400"
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  >
+                    Average time to resolved
+                  </p>
+                  <p
+                    className="mt-density-sm font-bold text-gray-900 dark:text-gray-100"
+                    style={{
+                      fontSize: "var(--tally-font-size-3xl)",
+                      lineHeight: "var(--tally-line-height-tight)",
+                    }}
+                  >
+                    {AVG_TIME_TO_RESOLVED_DAYS} days
+                  </p>
+                  <div
+                    className={cn(
+                      "mt-density-sm flex items-center gap-density-xs font-medium",
+                      METRIC_TRENDS[1].positive ? "text-[#008000] dark:text-green-400" : "text-[#C40000] dark:text-red-400"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-xs)" }}
+                  >
+                    <Icon
+                      name={METRIC_TRENDS[1].direction === "up" ? "trending_up" : "trending_down"}
+                      size="var(--tally-icon-size-sm)"
+                    />
+                    <span>{METRIC_TRENDS[1].text}</span>
+                  </div>
                 </div>
-              </div>
-              <p
-                className="mt-3 font-bold text-gray-900 dark:text-gray-100"
-                style={{ fontSize: "var(--tally-font-size-4xl)", lineHeight: "var(--tally-line-height-tight)" }}
-              >
-                {AVG_TIME_TO_RESOLVED_DAYS} days
-              </p>
-              <div
-                className={cn(
-                  "mt-3 flex items-center gap-1.5 text-xs font-medium",
-                  METRIC_TRENDS[1].positive ? "text-[#008000] dark:text-green-400" : "text-[#C40000] dark:text-red-400"
-                )}
-              >
-                <Icon
-                  name={METRIC_TRENDS[1].direction === "up" ? "trending_up" : "trending_down"}
-                  size={16}
-                />
-                <span>{METRIC_TRENDS[1].text}</span>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20">
+                  <Icon
+                    name="schedule"
+                    size="var(--tally-icon-size-lg)"
+                    className="text-[#2C365D] dark:text-[#7c8cb8]"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
-            <CardContent className="flex flex-col justify-center px-6 pt-6 pb-5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
-                  Open cases
-                </p>
-                <div className="flex shrink-0 items-center justify-center rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
-                  <Icon name="pending_actions" size={28} className="text-muted-foreground dark:text-gray-400" />
+            <CardContent className="p-density-xl pt-density-xl">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="font-medium text-muted-foreground dark:text-gray-400"
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  >
+                    Open cases
+                  </p>
+                  <p
+                    className="mt-density-sm font-bold text-gray-900 dark:text-gray-100"
+                    style={{
+                      fontSize: "var(--tally-font-size-3xl)",
+                      lineHeight: "var(--tally-line-height-tight)",
+                    }}
+                  >
+                    {OPEN_CASES_COUNT.toLocaleString()}
+                  </p>
+                  <div
+                    className={cn(
+                      "mt-density-sm flex items-center gap-density-xs font-medium",
+                      METRIC_TRENDS[2].positive ? "text-[#008000] dark:text-green-400" : "text-[#C40000] dark:text-red-400"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-xs)" }}
+                  >
+                    <Icon
+                      name={METRIC_TRENDS[2].direction === "up" ? "trending_up" : "trending_down"}
+                      size="var(--tally-icon-size-sm)"
+                    />
+                    <span>{METRIC_TRENDS[2].text}</span>
+                  </div>
                 </div>
-              </div>
-              <p
-                className="mt-3 font-bold text-gray-900 dark:text-gray-100"
-                style={{ fontSize: "var(--tally-font-size-4xl)", lineHeight: "var(--tally-line-height-tight)" }}
-              >
-                {OPEN_CASES_COUNT.toLocaleString()}
-              </p>
-              <div
-                className={cn(
-                  "mt-3 flex items-center gap-1.5 text-xs font-medium",
-                  METRIC_TRENDS[2].positive ? "text-[#008000] dark:text-green-400" : "text-[#C40000] dark:text-red-400"
-                )}
-              >
-                <Icon
-                  name={METRIC_TRENDS[2].direction === "up" ? "trending_up" : "trending_down"}
-                  size={16}
-                />
-                <span>{METRIC_TRENDS[2].text}</span>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20">
+                  <Icon
+                    name="folder_open"
+                    size="var(--tally-icon-size-lg)"
+                    className="text-[#2C365D] dark:text-[#7c8cb8]"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className="overflow-hidden border border-border bg-white shadow-none dark:border-gray-700 dark:bg-gray-900">
-            <CardContent className="flex flex-col justify-center px-6 pt-6 pb-5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-medium text-muted-foreground dark:text-gray-400">
-                  Total records (contact roles)
-                </p>
-                <div className="flex shrink-0 items-center justify-center rounded-lg bg-gray-100 p-2 dark:bg-gray-800">
-                  <Icon name="contacts" size={28} className="text-muted-foreground dark:text-gray-400" />
+            <CardContent className="p-density-xl pt-density-xl">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="font-medium text-muted-foreground dark:text-gray-400"
+                    style={{ fontSize: "var(--tally-font-size-sm)" }}
+                  >
+                    Total records (contact roles)
+                  </p>
+                  <p
+                    className="mt-density-sm font-bold text-gray-900 dark:text-gray-100"
+                    style={{
+                      fontSize: "var(--tally-font-size-3xl)",
+                      lineHeight: "var(--tally-line-height-tight)",
+                    }}
+                  >
+                    948
+                  </p>
+                  <div
+                    className={cn(
+                      "mt-density-sm flex items-center gap-density-xs font-medium",
+                      METRIC_TRENDS[3].positive ? "text-[#008000] dark:text-green-400" : "text-[#C40000] dark:text-red-400"
+                    )}
+                    style={{ fontSize: "var(--tally-font-size-xs)" }}
+                  >
+                    <Icon
+                      name={METRIC_TRENDS[3].direction === "up" ? "trending_up" : "trending_down"}
+                      size="var(--tally-icon-size-sm)"
+                    />
+                    <span>{METRIC_TRENDS[3].text}</span>
+                  </div>
                 </div>
-              </div>
-              <p
-                className="mt-3 font-bold text-gray-900 dark:text-gray-100"
-                style={{ fontSize: "var(--tally-font-size-4xl)", lineHeight: "var(--tally-line-height-tight)" }}
-              >
-                948
-              </p>
-              <div
-                className={cn(
-                  "mt-3 flex items-center gap-1.5 text-xs font-medium",
-                  METRIC_TRENDS[3].positive ? "text-[#008000] dark:text-green-400" : "text-[#C40000] dark:text-red-400"
-                )}
-              >
-                <Icon
-                  name={METRIC_TRENDS[3].direction === "up" ? "trending_up" : "trending_down"}
-                  size={16}
-                />
-                <span>{METRIC_TRENDS[3].text}</span>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20">
+                  <Icon
+                    name="contacts"
+                    size="var(--tally-icon-size-lg)"
+                    className="text-[#2C365D] dark:text-[#7c8cb8]"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
