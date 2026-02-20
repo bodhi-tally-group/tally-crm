@@ -530,12 +530,12 @@ export default function CaseDetailContent({
                     index > 0 && "border-l border-border dark:border-gray-600",
                     communicationsFilterTab === value
                       ? "bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100"
-                      : "text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+                      : "text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300"
                   )}
                   style={{ fontSize: "var(--tally-font-size-sm)" }}
                   aria-pressed={communicationsFilterTab === value}
                 >
-                  <Icon name={icon} size={16} className="shrink-0" />
+                  <Icon name={icon} size={16} className="shrink-0 text-current" />
                   {label}
                 </button>
               ))}
