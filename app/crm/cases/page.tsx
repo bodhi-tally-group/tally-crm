@@ -642,7 +642,7 @@ export default function CaseListPage() {
                 setContextMenu((prev) => ({ ...prev, open: false }));
               }}
             >
-              Open Case in New Browser tab
+              Open case in new browser tab
             </button>
             <button
               type="button"
