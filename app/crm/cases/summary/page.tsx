@@ -28,14 +28,14 @@ import {
   Rectangle,
 } from "recharts";
 
-const CHART_BLUE = dataVisualizationColors.dataFSolid.hex;
+const CHART_BLUE = "#0091BF";
 const CHART_COLORS = [
   dataVisualizationColors.dataASolid.hex,
   dataVisualizationColors.dataBSolid.hex,
   dataVisualizationColors.dataCSolid.hex,
   dataVisualizationColors.dataDSolid.hex,
   dataVisualizationColors.dataESolid.hex,
-  dataVisualizationColors.dataFSolid.hex,
+  "#0091BF",
   "#06B6D4",
   "#EC4899",
   "#84CC16",
@@ -342,11 +342,11 @@ export default function CasesSummaryDashboardPage() {
                     <span>{METRIC_TRENDS[0].text}</span>
                   </div>
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#E6F7FF] dark:bg-[#006180]/20">
                   <Icon
                     name="folder"
                     size="var(--tally-icon-size-lg)"
-                    className="text-[#2C365D] dark:text-[#7c8cb8]"
+                    className="text-[#006180] dark:text-[#80E0FF]"
                   />
                 </div>
               </div>
@@ -386,11 +386,11 @@ export default function CasesSummaryDashboardPage() {
                     <span>{METRIC_TRENDS[1].text}</span>
                   </div>
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#E6F7FF] dark:bg-[#006180]/20">
                   <Icon
                     name="schedule"
                     size="var(--tally-icon-size-lg)"
-                    className="text-[#2C365D] dark:text-[#7c8cb8]"
+                    className="text-[#006180] dark:text-[#80E0FF]"
                   />
                 </div>
               </div>
@@ -430,11 +430,11 @@ export default function CasesSummaryDashboardPage() {
                     <span>{METRIC_TRENDS[2].text}</span>
                   </div>
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#E6F7FF] dark:bg-[#006180]/20">
                   <Icon
                     name="folder_open"
                     size="var(--tally-icon-size-lg)"
-                    className="text-[#2C365D] dark:text-[#7c8cb8]"
+                    className="text-[#006180] dark:text-[#80E0FF]"
                   />
                 </div>
               </div>
@@ -474,11 +474,11 @@ export default function CasesSummaryDashboardPage() {
                     <span>{METRIC_TRENDS[3].text}</span>
                   </div>
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#2C365D]/10 dark:bg-[#7c8cb8]/20">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-density-md bg-[#E6F7FF] dark:bg-[#006180]/20">
                   <Icon
                     name="contacts"
                     size="var(--tally-icon-size-lg)"
-                    className="text-[#2C365D] dark:text-[#7c8cb8]"
+                    className="text-[#006180] dark:text-[#80E0FF]"
                   />
                 </div>
               </div>
